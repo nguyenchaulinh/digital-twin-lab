@@ -28,6 +28,7 @@ export function parseWeather(body) {
 export function parseAirFeed(body) {
   if (body?.status !== "ok") throw new Error("air quality API status not ok");
   const data = body.data;
+  if (data?.aqi === "-") throw new Error("station has no current data");
   const aqi = Number(data?.aqi);
   if (!Number.isInteger(aqi) || aqi < 0 || aqi > 1000) throw new Error("unexpected air quality payload");
   const pm25 = Number(data?.iaqi?.pm25?.v);

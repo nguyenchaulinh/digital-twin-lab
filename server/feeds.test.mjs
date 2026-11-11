@@ -24,7 +24,8 @@ assert.deepEqual(parseAirFeed(feed), {
 });
 assert.equal(parseAirFeed({ status: "ok", data: { aqi: 40 } }).pm25, null);
 assert.throws(() => parseAirFeed({ status: "error", data: "Invalid key" }), /status not ok/);
-assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: "-" } }), /unexpected air quality payload/);
+assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: "-" } }), /no current data/);
+assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: "abc" } }), /unexpected air quality payload/);
 assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: 12.5 } }), /unexpected air quality payload/);
 
 console.log("feeds parsers: all checks passed");

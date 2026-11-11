@@ -15,7 +15,8 @@ const AIR_POLL_MS = 15 * 60 * 1000;
 const STALE_MS = 60 * 60 * 1000; // live readings older than this are ignored
 
 const AQICN_TOKEN = process.env.AQICN_TOKEN;
-const AQICN_STATION = process.env.AQICN_STATION ?? "@8641"; // US Embassy Hanoi
+// UN International School of Hanoi; the US Embassy station (@8641) often reports no data
+const AQICN_STATION = process.env.AQICN_STATION ?? "@8688";
 
 const OUTSIDE_BASE = 32; // synthetic fallback only
 const K_ENV = 0.01; // heat exchange with outside, per minute

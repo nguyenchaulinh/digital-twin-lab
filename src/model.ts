@@ -6,7 +6,7 @@ const AC_SETPOINT = 22;
 const ASSUMED_HEAT = 0.02;
 const STEP_MIN = 5;
 
-export const ALERT_TEMP = 28;
+export const ALERT_TEMP = 25;
 
 export function predictTemp(temp: number, outside: number, ac: boolean, minutes: number): number {
   let t = temp;
