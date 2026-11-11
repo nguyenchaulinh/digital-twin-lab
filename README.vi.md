@@ -2,14 +2,14 @@
 
 [English](README.md)
 
-Dự án học tập nhỏ, dựng **digital twin của một khu đô thị**: 8 tòa chung cư thật quanh Vinhomes Smart City (Hà Nội), với điều kiện trong nhà được mô phỏng, thời tiết và chất lượng không khí ngoài trời lấy trực tiếp, cùng một bộ khuyến nghị thông gió hoặc bật điều hòa.
+Dự án học tập nhỏ, dựng **digital twin của một khu đô thị**: hai khu Vinhomes ở Hà Nội (Smart City và Ocean Park), mỗi khu 8 tòa chung cư thật, với điều kiện trong nhà được mô phỏng, thời tiết và chất lượng không khí ngoài trời lấy trực tiếp, cùng một bộ khuyến nghị thông gió hoặc bật điều hòa.
 
 > **Dự án học tập độc lập. Không liên quan tới Vingroup hay Vinhomes và không dùng dữ liệu từ hệ thống của họ.** Hình dạng và tên tòa nhà lấy từ OpenStreetMap. Mọi thứ bên trong tòa nhà (nhiệt độ phòng, công suất và điện năng điều hòa) đều là **mô phỏng**.
 
 ## Chức năng
 
-- **Chế độ khu đô thị:** hình khối 3D của các tòa tháp và khoảng 40 công trình xung quanh, đùn theo số tầng. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng. Di chuột vào một tòa (hoặc dòng của nó trong danh sách) sẽ làm sáng cả hai và hiện tên tòa trong tooltip.
-- **Chế độ tòa nhà:** bấm vào một tòa để xem các phòng có cảm biến, chọn phòng, bật/tắt điều hòa (lệnh được gửi ngược về simulator).
+- **Chế độ khu đô thị:** khuôn viên thật từ OpenStreetMap: 8 tòa tháp, tới 160 công trình xung quanh, đường và lối đi bộ, công viên, mặt nước, sân thể thao và bãi đỗ xe, các công trình được đùn theo số tầng. Chuyển giữa hai khu bằng các nút phía trên danh sách. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng. Di chuột vào một tòa (hoặc dòng của nó trong danh sách) sẽ làm sáng cả hai và hiện tên tòa trong tooltip.
+- **Chế độ tòa nhà:** bấm vào một tòa để mở nó theo đúng hình dạng thật: lớp vỏ mờ theo footprint và chiều cao thật với một đường kẻ ở mỗi tầng, và trên mỗi tầng có cảm biến là một tấm màu cho từng phòng. Panel chi tiết hiện tên, liên kết OSM, số tầng, chiều cao ước tính, diện tích nền, các giá trị trung bình và bảng các tầng có cảm biến. Chọn phòng từ cảnh 3D hoặc từ bảng rồi bật/tắt điều hòa (lệnh được gửi ngược về simulator).
 - **Dữ liệu ngoài trời trực tiếp:** nhiệt độ Hà Nội từ Open-Meteo, chất lượng không khí (AQI, PM2.5) từ AQICN. Nếu nguồn thiếu hoặc quá hạn, simulator quay về chu kỳ ngày giả lập và HUD ghi rõ.
 - **Bộ khuyến nghị:** với từng phòng, khuyên *mở cửa sổ*, *bật điều hòa*, *giữ cửa sổ đóng* hoặc *không cần làm gì*, kèm lý do và công suất tối đa có thể tiết kiệm. Sức khỏe được ưu tiên (xem [chính sách](#chính-sách-khuyến-nghị)).
 - **Giao diện tiếng Anh / tiếng Việt**, có nút chuyển EN/VI. Lựa chọn được nhớ trong trình duyệt.
@@ -26,7 +26,7 @@ server/sim.mjs  ──snapshot mỗi 1 giây (WebSocket)──►  src/main.ts  
 |---|---|
 | 1. Thu thập | `server/sim.mjs` (phòng giả lập), `server/feeds.mjs` (Open-Meteo, AQICN) |
 | 2. Truyền | WebSocket `ws://127.0.0.1:8787` |
-| 3. Mô hình hóa | footprint trong `data/township.json`, `src/township-view.ts`, `src/building-view.ts` |
+| 3. Mô hình hóa | bản trích OSM trong `data/townships/*.json`, `src/township-view.ts`, `src/building-view.ts` |
 | 4. Phân tích | `src/model.ts` (dự báo what-if), `src/advisor.ts` (chính sách) |
 | 5. Tương tác | `src/main.ts`, `src/hud.ts`, lệnh điều hòa gửi ngược về simulator |
 
@@ -87,14 +87,14 @@ Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, khôn
 | `npm run sim` | Chạy simulator |
 | `npm run dev` | Chạy Vite dev server |
 | `npm run build` | Build production |
-| `npm test` | Chạy toàn bộ test (`test:feeds`, `test:township`, `test:advisor`) |
-| `npm run fetch:township` | Lấy lại footprint khu đô thị từ OpenStreetMap (ghi `data/township.json`) |
+| `npm test` | Chạy toàn bộ test (`test:feeds`, `test:township`, `test:advisor`, `test:geometry`) |
+| `npm run fetch:township` | Lấy lại các khu đô thị từ OpenStreetMap (ghi `data/townships/*.json`). Thêm `-- ocean-park` để chỉ lấy một khu |
 | `npx tsc -p .` | Kiểm tra kiểu |
 
 ## Cấu trúc thư mục
 
 ```
-data/township.json     footprint tòa nhà (trích từ OSM)
+data/townships/        bản trích OSM: tòa tháp, công trình, đường, cây xanh, mặt nước
 scripts/               script lấy dữ liệu một lần
 server/                simulator, nguồn live, bộ đọc khu đô thị (+ test)
 src/                   viewer: cảnh 3D, HUD, khuyến nghị, i18n
@@ -111,9 +111,15 @@ three 0.187.0, vite 8.3.5, typescript 7.0.2, ws 8.22.1 (`package-lock.json` đã
 |---|---|---|
 | Nhiệt độ ngoài trời | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0, bắt buộc ghi công. Bản miễn phí chỉ dành cho **phi thương mại** |
 | Chất lượng không khí | [World Air Quality Index Project](https://aqicn.org/) | Cần token miễn phí. Hãy đọc điều khoản trước khi dùng ngoài mục đích học tập |
-| Footprint, tên, số tầng tòa nhà | [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0, © OpenStreetMap contributors. `data/township.json` là bản trích và mang cùng giấy phép |
+| Footprint, tên, số tầng, đường, cây xanh, mặt nước | [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0, © OpenStreetMap contributors. `data/townships/*.json` là các bản trích và mang cùng giấy phép |
 
 Số tầng thiếu trong OSM được giả định (nhà phố 2, nhà liền kề và trường học 3); các công trình đó chỉ làm nền, không được mô phỏng.
+
+## Ghi chú thiết kế
+
+- **Vì sao dùng OpenStreetMap thay vì Google Maps.** OSM cho footprint, tên, số tầng, đường, công viên và mặt nước mà không cần key và không tốn tiền. Photorealistic 3D Tiles của Google cần bật thanh toán và API key, thuộc nhóm Enterprise với hạn mức miễn phí nhỏ, bắt buộc ghi công và hiện logo Google, và chính sách cấm lưu đệm hoặc trích xuất dữ liệu để dùng ngoại tuyến. Việc Việt Nam có được phủ hay không chưa xác nhận được. Các điểm này lấy từ tìm kiếm web, không phải từ hợp đồng: hãy kiểm tra điều khoản hiện hành của Google trước khi dựa vào. Một key đưa xuống trình duyệt cũng bị lộ, nên mọi tích hợp Google phải đi qua một proxy nhỏ phía server.
+- **Chiều cao là giả định** 3 m mỗi tầng; số tầng lấy từ OSM (`building:levels`).
+- **Hồ nước được vẽ trong OSM dưới dạng multipolygon relation thì chưa được vẽ**; chỉ trích xuất các way kín.
 
 ## Xử lý sự cố
 

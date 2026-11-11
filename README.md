@@ -2,14 +2,14 @@
 
 [Tiếng Việt](README.vi.md)
 
-A small learning project that builds a **digital twin of a township**: 8 real apartment towers around Vinhomes Smart City (Hanoi), with simulated indoor conditions, live outside weather and air quality, and an advisor that recommends ventilation or air conditioning.
+A small learning project that builds a **digital twin of a township**: two Vinhomes townships in Hanoi (Smart City and Ocean Park), each with 8 real apartment towers, with simulated indoor conditions, live outside weather and air quality, and an advisor that recommends ventilation or air conditioning.
 
 > **Independent learning project. Not affiliated with Vingroup or Vinhomes, and it uses no data from their systems.** Building footprints and names come from OpenStreetMap. Everything inside the buildings (room temperatures, AC power and energy) is **simulated**.
 
 ## What it does
 
-- **Township view:** 3D footprints of the towers plus ~40 surrounding buildings, extruded by number of levels. Each tower is coloured by its average room temperature. Hovering a tower (or its row in the list) highlights both and shows the building name in a tooltip.
-- **Building view:** click a tower to see its instrumented rooms, select a room, and toggle its air conditioner (the command goes back to the simulator).
+- **Township view:** the real campus from OpenStreetMap: 8 towers, up to 160 surrounding buildings, roads and footpaths, parks, water, sports pitches and parking, with buildings extruded by number of levels. Switch between the two townships with the buttons above the list. Each tower is coloured by its average room temperature. Hovering a tower (or its row in the list) highlights both and shows the building name in a tooltip.
+- **Building view:** click a tower to open it in its real shape: a ghost shell of the true footprint and height with a line at every level, and a coloured slab per room on each instrumented floor. A detail panel shows the name, OSM link, floors, estimated height, footprint area, averages and a table of the instrumented floors. Select a room from the 3D view or the table and toggle its air conditioner (the command goes back to the simulator).
 - **Live outside data:** Hanoi temperature from Open-Meteo and air quality (AQI, PM2.5) from AQICN. If a feed is missing or stale the simulator falls back to a synthetic daily cycle and the HUD says so.
 - **Advisor:** per room, recommends *open windows*, *run AC*, *keep windows closed* or *no action*, with the reason and the maximum power that could be saved. Health comes first (see [policy](#advisor-policy)).
 - **English / Vietnamese** UI with a switch (EN/VI). The choice is remembered in the browser.
@@ -26,7 +26,7 @@ server/sim.mjs  ──snapshot every 1s (WebSocket)──►  src/main.ts  ─�
 |---|---|
 | 1. Collection | `server/sim.mjs` (simulated rooms), `server/feeds.mjs` (Open-Meteo, AQICN) |
 | 2. Transport | WebSocket on `ws://127.0.0.1:8787` |
-| 3. Modelling | `data/township.json` footprints, `src/township-view.ts`, `src/building-view.ts` |
+| 3. Modelling | `data/townships/*.json` OSM extracts, `src/township-view.ts`, `src/building-view.ts` |
 | 4. Analysis | `src/model.ts` (what-if prediction), `src/advisor.ts` (policy) |
 | 5. Interaction | `src/main.ts`, `src/hud.ts`, AC command back to the simulator |
 
@@ -87,14 +87,14 @@ The thresholds (100, 26 °C, 1 °C) are **tunable assumptions, not standards**. 
 | `npm run sim` | Start the simulator |
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build |
-| `npm test` | Run all tests (`test:feeds`, `test:township`, `test:advisor`) |
-| `npm run fetch:township` | Re-extract the township footprints from OpenStreetMap (writes `data/township.json`) |
+| `npm test` | Run all tests (`test:feeds`, `test:township`, `test:advisor`, `test:geometry`) |
+| `npm run fetch:township` | Re-extract the townships from OpenStreetMap (writes `data/townships/*.json`). Add `-- ocean-park` for one township |
 | `npx tsc -p .` | Typecheck |
 
 ## Project layout
 
 ```
-data/township.json     building footprints (OSM extract)
+data/townships/        OSM extracts: towers, buildings, roads, green areas, water
 scripts/               one-off data extraction
 server/                simulator, live feeds, township loader (+ tests)
 src/                   viewer: scenes, HUD, advisor, i18n
@@ -111,9 +111,15 @@ three 0.187.0, vite 8.3.5, typescript 7.0.2, ws 8.22.1 (`package-lock.json` is c
 |---|---|---|
 | Outside temperature | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0, attribution required. The free tier is for **non-commercial** use |
 | Air quality | [World Air Quality Index Project](https://aqicn.org/) | Requires a free token. Read their terms before any use beyond learning |
-| Building footprints, names, levels | [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0, © OpenStreetMap contributors. `data/township.json` is an extract and carries the same licence |
+| Footprints, names, levels, roads, green areas, water | [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0, © OpenStreetMap contributors. `data/townships/*.json` are extracts and carry the same licence |
 
 Levels missing in OSM are assumed (2 for houses, 3 for terraces and schools); those buildings are context only and are not simulated.
+
+## Design notes
+
+- **Why OpenStreetMap and not Google Maps.** OSM gives footprints, names, levels, roads, parks and water with no key and no bill. Google's Photorealistic 3D Tiles need billing and an API key, are an Enterprise SKU with only a small free quota, require Google's attribution and logo, and their policies prohibit caching or extracting the data for offline use. Whether Vietnam is covered was not confirmed. These points come from web search, not from a contract: check Google's current terms before relying on them. A key shipped to a browser is also exposed, so any Google integration should go through a small server-side proxy.
+- **Heights are assumed** at 3 m per level; the floor count itself comes from OSM (`building:levels`).
+- **Lakes mapped as OSM multipolygon relations are not drawn**; only closed ways are extracted.
 
 ## Troubleshooting
 
