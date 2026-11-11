@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "sim": "node --use-system-ca --env-file-if-exists=.env server/sim.mjs",
-    "test": "npm run test:feeds && npm run test:advisor",
+    "fetch:township": "node --use-system-ca scripts/fetch-township.mjs",
+    "test": "npm run test:feeds && npm run test:township && npm run test:advisor",
     "test:feeds": "node server/feeds.test.mjs",
+    "test:township": "node server/township.test.mjs",
     "test:advisor": "node test/advisor.test.ts",
     "dev": "vite",
     "build": "vite build"

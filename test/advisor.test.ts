@@ -32,6 +32,14 @@ assert.equal(withInput({ outsideTemp: 31, roomTemp: 28, ac: true }).action, "no-
 // Outside only counts as cooler by a margin
 assert.equal(withInput({ outsideTemp: 24.5 }).action, "no-action");
 
+// Reasons are keys (translated by the UI), and carry the AQI they refer to
+assert.equal(withInput({}).reasonKey, "ventilate");
+assert.equal(withInput({}).aqi, 60);
+assert.equal(withInput({ aqi: 160 }).reasonKey, "unhealthy");
+assert.equal(withInput({ aqi: null }).reasonKey, "noAqi");
+assert.equal(withInput({ outsideTemp: 31, roomTemp: 28 }).reasonKey, "needsCooling");
+assert.equal(withInput({ outsideTemp: 31, roomTemp: 25 }).reasonKey, "comfort");
+
 const summary = summarize([withInput({ ac: true }), withInput({}), withInput({ aqi: 160 })]);
 assert.deepEqual(summary.counts, { "open-windows": 2, "run-ac": 0, "keep-closed": 1, "no-action": 0 });
 assert.equal(summary.saveKw, 1);

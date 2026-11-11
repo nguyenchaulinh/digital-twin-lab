@@ -1,136 +1,95 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { advise, summarize, type AdviceAction } from "./advisor";
+import { createBuildingView, type BuildingView } from "./building-view";
+import { createBuildingTable, onBack, setBackVisible, setHint, setRows, type BuildingStats, type Row } from "./hud";
+import { applyStatic, fmt, getLang, onLangChange, setLang, t, type Key } from "./i18n";
 import { ALERT_TEMP, predictTemp } from "./model";
-
-interface RoomState {
-  id: string;
-  floor: number;
-  temp: number;
-  ac: boolean;
-}
-
-interface AirState {
-  aqi: number;
-  pm25: number | null;
-  station: string;
-  updated: string;
-}
-
-interface Snapshot {
-  outside: number;
-  outsideSource: "open-meteo" | "synthetic";
-  air: AirState | null;
-  acKwh: number;
-  acPowerKw: number;
-  simMinutes: number;
-  rooms: RoomState[];
-}
+import { camera, canvas, controls, frameView, renderer, scene } from "./scene";
+import { buildingIds, township } from "./township-data";
+import { createTownshipView } from "./township-view";
+import { isSnapshot, type RoomState, type Snapshot } from "./types";
 
 const WS_URL = "ws://127.0.0.1:8787";
-const ROOM_ID = /^F[1-3]-[AB]$/;
-const TEMP_MIN = 22;
-const TEMP_MAX = 36;
+const CLICK_SLOP_PX = 5; // a drag that ends on the canvas is a camera move, not a click
 
 // Demo only: ?demoAqi=160 overrides the AQI fed to the advisor, to see the health-vs-energy rule at work
 const demoParam = new URLSearchParams(location.search).get("demoAqi");
 const DEMO_AQI = demoParam !== null && /^\d{1,3}$/.test(demoParam) ? Number(demoParam) : null;
 
-const ADVICE_LABEL: Record<AdviceAction, string> = {
-  "open-windows": "Open windows",
-  "run-ac": "Run AC",
-  "keep-closed": "Keep windows closed",
-  "no-action": "No action",
+const ADVICE_KEYS: Record<AdviceAction, Key> = {
+  "open-windows": "advice.open-windows",
+  "run-ac": "advice.run-ac",
+  "keep-closed": "advice.keep-closed",
+  "no-action": "advice.no-action",
 };
 
-// --- Layer 5 (view): scene ---
-const canvas = document.getElementById("view") as HTMLCanvasElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0f172a);
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-camera.position.set(9, 7, 11);
-const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 2.5, 0);
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-sun.position.set(5, 10, 7);
-scene.add(sun);
-
-const meshes = new Map<string, THREE.Mesh>();
-const roomX = (id: string) => (id.endsWith("A") ? -2.1 : 2.1);
-const roomY = (floor: number) => (floor - 1) * 2.2 + 1;
-
-function ensureMesh(room: RoomState): THREE.Mesh {
-  let mesh = meshes.get(room.id);
-  if (!mesh) {
-    mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(3.8, 2, 4),
-      new THREE.MeshStandardMaterial({ transparent: true, opacity: 0.85 }),
-    );
-    mesh.position.set(roomX(room.id), roomY(room.floor), 0);
-    mesh.userData.roomId = room.id;
-    scene.add(mesh);
-    meshes.set(room.id, mesh);
-  }
-  return mesh;
-}
-
-function tempColor(temp: number): THREE.Color {
-  const k = Math.min(Math.max((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), 0), 1);
-  return new THREE.Color().setHSL((1 - k) * 0.6, 0.75, 0.5); // blue -> red
-}
-
-// --- Layer 1-2: telemetry in. The twin only mirrors what the physical side reports. ---
-let latest: Snapshot | null = null;
-let selectedId: string | null = null;
-
-function isAir(air: unknown): air is AirState {
-  const a = air as AirState;
-  return (
-    Number.isInteger(a?.aqi) &&
-    (a.pm25 === null || Number.isFinite(a.pm25)) &&
-    typeof a.station === "string" &&
-    typeof a.updated === "string"
-  );
-}
-
 // US EPA AQI breakpoints
-function aqiLabel(aqi: number): string {
-  if (aqi <= 50) return "Good";
-  if (aqi <= 100) return "Moderate";
-  if (aqi <= 150) return "Unhealthy for sensitive groups";
-  if (aqi <= 200) return "Unhealthy";
-  if (aqi <= 300) return "Very unhealthy";
-  return "Hazardous";
+const AQI_LABELS: Array<[number, Key]> = [
+  [50, "aqi.good"],
+  [100, "aqi.moderate"],
+  [150, "aqi.sensitive"],
+  [200, "aqi.unhealthy"],
+  [300, "aqi.veryUnhealthy"],
+];
+// AQICN names look like "English name, Vietnam (Vietnamese name)": show the half that matches the UI language
+function stationName(name: string): string {
+  const open = name.lastIndexOf("(");
+  if (open <= 0 || !name.endsWith(")")) return name;
+  return getLang() === "vi" ? name.slice(open + 1, -1).trim() : name.slice(0, open).trim();
 }
 
-function isSnapshot(data: unknown): data is Snapshot {
-  const d = data as Snapshot;
-  return (
-    Array.isArray(d?.rooms) &&
-    Number.isFinite(d.outside) &&
-    (d.outsideSource === "open-meteo" || d.outsideSource === "synthetic") &&
-    (d.air === null || isAir(d.air)) &&
-    Number.isFinite(d.acKwh) &&
-    d.acKwh >= 0 &&
-    Number.isFinite(d.acPowerKw) &&
-    d.acPowerKw >= 0 &&
-    Number.isFinite(d.simMinutes) &&
-    d.rooms.every(
-      (r) =>
-        ROOM_ID.test(r.id) &&
-        Number.isFinite(r.temp) &&
-        r.temp > -50 &&
-        r.temp < 100 &&
-        typeof r.ac === "boolean" &&
-        Number.isInteger(r.floor),
-    )
-  );
+const aqiLabel = (aqi: number): string => t(AQI_LABELS.find(([max]) => aqi <= max)?.[1] ?? "aqi.hazardous");
+
+// --- Views: the township overview, and one building opened from it ---
+const townshipView = createTownshipView(township);
+scene.add(townshipView.group);
+frameView(townshipView.center, townshipView.radius);
+
+let latest: Snapshot | null = null;
+let openBuildingId: string | null = null;
+let buildingView: BuildingView | null = null;
+let selectedRoomId: string | null = null;
+
+const roomsOf = (snap: Snapshot, buildingId: string): RoomState[] => snap.rooms.filter((r) => r.building === buildingId);
+
+function avgTemp(rooms: RoomState[]): number | null {
+  return rooms.length === 0 ? null : rooms.reduce((sum, r) => sum + r.temp, 0) / rooms.length;
 }
 
+function disposeBuilding(): void {
+  if (!buildingView) return;
+  scene.remove(buildingView.group);
+  buildingView.dispose();
+  buildingView = null;
+}
+
+function openBuilding(id: string): void {
+  if (!latest || !buildingIds.has(id)) return;
+  const rooms = roomsOf(latest, id);
+  if (rooms.length === 0) return;
+  disposeBuilding();
+  buildingView = createBuildingView(rooms);
+  scene.add(buildingView.group);
+  townshipView.group.visible = false;
+  openBuildingId = id;
+  selectedRoomId = null;
+  frameView(buildingView.center, buildingView.radius);
+  refresh();
+}
+
+function closeBuilding(): void {
+  disposeBuilding();
+  openBuildingId = null;
+  selectedRoomId = null;
+  townshipView.group.visible = true;
+  frameView(townshipView.center, townshipView.radius);
+  refresh();
+}
+
+// --- Telemetry in (layers 1-2): the twin only mirrors what the physical side reports ---
 const ws = new WebSocket(WS_URL);
+ws.onopen = () => refresh();
+ws.onclose = () => refresh();
 ws.onmessage = (ev) => {
   let data: unknown;
   try {
@@ -138,106 +97,138 @@ ws.onmessage = (ev) => {
   } catch {
     return;
   }
-  if (!isSnapshot(data)) return;
+  if (!isSnapshot(data, buildingIds)) return;
   latest = data;
-  for (const room of data.rooms) {
-    const mesh = ensureMesh(room);
-    (mesh.material as THREE.MeshStandardMaterial).color.copy(tempColor(room.temp));
-  }
-  renderInfo();
+  refresh();
 };
-ws.onclose = () => renderInfo();
 
-// --- Layer 5 (control back): command to the physical side ---
-function toggleAc(roomId: string) {
+// --- Control back (layer 5): command to the physical side ---
+function toggleAc(roomId: string): void {
   const room = latest?.rooms.find((r) => r.id === roomId);
   if (!room || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: "setAc", roomId, on: !room.ac }));
 }
 
-// --- Selection ---
+// --- Picking ---
 const raycaster = new THREE.Raycaster();
+let pointerDown: { x: number; y: number } | null = null;
+canvas.addEventListener("pointerdown", (ev) => {
+  pointerDown = { x: ev.clientX, y: ev.clientY };
+});
 canvas.addEventListener("click", (ev) => {
+  if (pointerDown && Math.hypot(ev.clientX - pointerDown.x, ev.clientY - pointerDown.y) > CLICK_SLOP_PX) return;
   const rect = canvas.getBoundingClientRect();
   const ndc = new THREE.Vector2(
     ((ev.clientX - rect.left) / rect.width) * 2 - 1,
     -((ev.clientY - rect.top) / rect.height) * 2 + 1,
   );
   raycaster.setFromCamera(ndc, camera);
-  const hit = raycaster.intersectObjects([...meshes.values()])[0];
-  selectedId = hit ? (hit.object.userData.roomId as string) : null;
-  renderInfo();
+  const hit = raycaster.intersectObjects(buildingView?.pickables ?? townshipView.pickables, false)[0];
+  if (buildingView) {
+    selectedRoomId = hit ? (hit.object.userData.roomId as string) : null;
+    refresh();
+  } else if (hit) {
+    openBuilding(hit.object.userData.buildingId as string);
+  }
 });
 window.addEventListener("keydown", (ev) => {
-  if (ev.key.toLowerCase() === "a" && selectedId) toggleAc(selectedId);
+  if (ev.key === "Escape" && openBuildingId) closeBuilding();
+  else if (ev.key.toLowerCase() === "a" && openBuildingId && selectedRoomId) toggleAc(selectedRoomId);
 });
 
-// --- Layer 4 + HUD: what-if from the twin's model. Text only, no innerHTML. ---
-const info = document.getElementById("info") as HTMLElement;
+// --- HUD ---
+const updateTable = createBuildingTable(township.buildings, openBuilding);
 
-function addRow(label: string, value: string, alert = false) {
-  const dt = document.createElement("dt");
-  dt.textContent = label;
-  const dd = document.createElement("dd");
-  dd.textContent = value;
-  if (alert) dd.className = "alert";
-  info.append(dt, dd);
-}
+function buildRows(snap: Snapshot): Row[] {
+  const scope = openBuildingId ? roomsOf(snap, openBuildingId) : snap.rooms;
+  const rows: Row[] = [];
 
-function renderInfo() {
-  info.replaceChildren();
-  addRow("Connection", ws.readyState === WebSocket.OPEN ? "live" : "disconnected", ws.readyState !== WebSocket.OPEN);
-  if (!latest) return;
-  const day = Math.floor(latest.simMinutes / 1440);
-  const hh = String(Math.floor((latest.simMinutes % 1440) / 60)).padStart(2, "0");
-  const mm = String(latest.simMinutes % 60).padStart(2, "0");
-  addRow("Sim time", `day ${day} ${hh}:${mm}`);
-  const live = latest.outsideSource === "open-meteo";
-  addRow("Outside (Hanoi)", `${latest.outside.toFixed(1)} °C · ${live ? "live" : "synthetic"}`, !live);
-  if (latest.air) {
-    addRow("AQI", `${latest.air.aqi} · ${aqiLabel(latest.air.aqi)}`, latest.air.aqi > 150);
-    if (latest.air.pm25 !== null) addRow("PM2.5", `${latest.air.pm25} µg/m³`);
-    addRow("Station", latest.air.station);
+  const day = Math.floor(snap.simMinutes / 1440);
+  const hh = String(Math.floor((snap.simMinutes % 1440) / 60)).padStart(2, "0");
+  const mm = String(snap.simMinutes % 60).padStart(2, "0");
+  rows.push({ label: t("hud.simTime"), value: t("hud.day", { n: day, time: `${hh}:${mm}` }) });
+
+  const live = snap.outsideSource === "open-meteo";
+  rows.push({
+    label: t("hud.outside"),
+    value: `${fmt(snap.outside, 1)} °C · ${t(live ? "hud.live" : "hud.synthetic")}`,
+    alert: !live,
+  });
+  if (snap.air) {
+    rows.push({ label: t("hud.aqi"), value: `${snap.air.aqi} · ${aqiLabel(snap.air.aqi)}`, alert: snap.air.aqi > 150 });
+    if (snap.air.pm25 !== null) rows.push({ label: t("hud.pm25"), value: `${snap.air.pm25} µg/m³` });
+    rows.push({ label: t("hud.station"), value: stationName(snap.air.station) });
   } else {
-    addRow("AQI", "n/a");
+    rows.push({ label: t("hud.aqi"), value: t("hud.na") });
   }
-  const alerts = latest.rooms.filter((r) => r.temp > ALERT_TEMP).length;
-  addRow("Rooms over limit", `${alerts} / ${latest.rooms.length}`, alerts > 0);
-  addRow("AC energy (sim)", `${latest.acKwh.toFixed(1)} kWh`);
+  if (DEMO_AQI !== null) rows.push({ label: t("hud.aqiDemo"), value: String(DEMO_AQI), alert: true });
+
+  const alerts = scope.filter((r) => r.temp > ALERT_TEMP).length;
+  rows.push({ label: t("hud.roomsOver"), value: `${alerts} / ${scope.length}`, alert: alerts > 0 });
+  const kwh = openBuildingId ? (snap.buildings.find((b) => b.id === openBuildingId)?.acKwh ?? 0) : snap.acKwh;
+  rows.push({ label: t("hud.acEnergy"), value: `${fmt(kwh, 1)} kWh` });
 
   // Advisor: health first, so the AQI decides before temperature does
-  const snap = latest;
   const aqiForAdvice = DEMO_AQI ?? snap.air?.aqi ?? null;
-  if (DEMO_AQI !== null) addRow("AQI (demo override)", String(DEMO_AQI), true);
   const adviceFor = (r: RoomState) =>
     advise({ roomTemp: r.temp, ac: r.ac, outsideTemp: snap.outside, aqi: aqiForAdvice, acPowerKw: snap.acPowerKw });
-  const summary = summarize(snap.rooms.map(adviceFor));
-  const saving = summary.saveKw > 0 ? ` · save up to ${summary.saveKw.toFixed(1)} kW` : "";
-  addRow("Ventilate instead of AC", `${summary.counts["open-windows"]} rooms${saving}`);
+  const summary = summarize(scope.map(adviceFor));
+  const saving = summary.saveKw > 0 ? t("hud.saveUpTo", { kw: fmt(summary.saveKw, 1) }) : "";
+  rows.push({
+    label: t("hud.ventInstead"),
+    value: t("hud.roomsCount", { n: summary.counts["open-windows"] }) + saving,
+  });
 
-  const room = latest.rooms.find((r) => r.id === selectedId);
-  if (!room) return;
-  addRow("Selected", room.id);
-  addRow("Actual temp", `${room.temp.toFixed(1)} °C`, room.temp > ALERT_TEMP);
-  addRow("AC", room.ac ? "on" : "off");
-  addRow("Twin +30min (AC on)", `${predictTemp(room.temp, latest.outside, true, 30).toFixed(1)} °C`);
-  addRow("Twin +30min (AC off)", `${predictTemp(room.temp, latest.outside, false, 30).toFixed(1)} °C`);
+  const building = township.buildings.find((b) => b.id === openBuildingId);
+  if (!building) return rows;
+  rows.push({ label: t("hud.building"), value: building.name });
+  rows.push({ label: t("hud.floors"), value: String(building.levels) });
+  const instrumented = new Set(scope.map((r) => r.floor)).size;
+  rows.push({ label: t("hud.instrumented"), value: t("hud.instrumentedValue", { n: instrumented, total: building.levels }) });
+
+  const room = scope.find((r) => r.id === selectedRoomId);
+  if (!room) return rows;
   const advice = adviceFor(room);
-  addRow("Advice", ADVICE_LABEL[advice.action]);
-  addRow("Why", advice.reason);
-  // Highlight the selected room by edge scale
-  for (const [id, mesh] of meshes) mesh.scale.setScalar(id === room.id ? 1.04 : 1);
+  rows.push({ label: t("hud.selected"), value: `${t("hud.floor")} ${room.floor} · ${room.id}` });
+  rows.push({ label: t("hud.actualTemp"), value: `${fmt(room.temp, 1)} °C`, alert: room.temp > ALERT_TEMP });
+  rows.push({ label: t("hud.ac"), value: t(room.ac ? "hud.on" : "hud.off") });
+  rows.push({ label: t("hud.twinOn"), value: `${fmt(predictTemp(room.temp, snap.outside, true, 30), 1)} °C` });
+  rows.push({ label: t("hud.twinOff"), value: `${fmt(predictTemp(room.temp, snap.outside, false, 30), 1)} °C` });
+  rows.push({ label: t("hud.advice"), value: t(ADVICE_KEYS[advice.action]) });
+  rows.push({ label: t("hud.why"), value: t(`reason.${advice.reasonKey}` as const, { aqi: advice.aqi ?? "" }) });
+  return rows;
 }
 
-function resize() {
-  const { clientWidth: w, clientHeight: h } = canvas;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+function refresh(): void {
+  const connected = ws.readyState === WebSocket.OPEN;
+  const rows: Row[] = [{ label: t("hud.connection"), value: t(connected ? "hud.live" : "hud.disconnected"), alert: !connected }];
+  if (latest) rows.push(...buildRows(latest));
+  setRows(rows);
+  setHint(t(openBuildingId ? "hint.building" : "hint.township"));
+  setBackVisible(openBuildingId !== null);
+
+  if (!latest) return;
+  const stats = new Map<string, BuildingStats>();
+  const avgByBuilding = new Map<string, number>();
+  for (const b of township.buildings) {
+    const rooms = roomsOf(latest, b.id);
+    const avg = avgTemp(rooms);
+    if (avg !== null) avgByBuilding.set(b.id, avg);
+    const kwh = latest.buildings.find((e) => e.id === b.id)?.acKwh ?? 0;
+    stats.set(b.id, { avgTemp: avg, alerts: rooms.filter((r) => r.temp > ALERT_TEMP).length, kwh });
+  }
+  updateTable(stats, openBuildingId);
+  townshipView.setTemps(avgByBuilding);
+  if (buildingView && openBuildingId) buildingView.setRooms(roomsOf(latest, openBuildingId), selectedRoomId);
 }
-window.addEventListener("resize", resize);
-resize();
-renderInfo();
+
+onBack(closeBuilding);
+onLangChange(refresh);
+for (const button of document.querySelectorAll<HTMLButtonElement>("button[data-lang]")) {
+  button.addEventListener("click", () => setLang(button.dataset.lang ?? ""));
+}
+applyStatic();
+refresh();
 
 renderer.setAnimationLoop(() => {
   controls.update();

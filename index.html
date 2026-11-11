@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,27 +7,70 @@
     <style>
       html, body { margin: 0; height: 100%; background: #0f172a; color: #e2e8f0; font: 14px/1.5 system-ui, sans-serif; }
       #view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-      #hud { position: fixed; top: 12px; left: 12px; width: 300px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 8px; }
-      #hud h1 { margin: 0 0 8px; font-size: 15px; }
-      #hud dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
-      #hud dt { color: #94a3b8; }
-      #hud dd { margin: 0; text-align: right; }
+      .panel { position: fixed; top: 12px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 8px; }
+      #hud { left: 12px; width: 320px; max-height: calc(100vh - 48px); overflow-y: auto; }
+      #towns { right: 12px; width: 380px; max-height: calc(100vh - 48px); overflow-y: auto; }
+      h1, h2 { margin: 0 0 8px; font-size: 15px; }
+      #hud-head { display: flex; justify-content: space-between; align-items: center; }
+      #lang { margin: 0; padding: 0; border: 0; }
+      .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      #lang button { padding: 2px 8px; background: transparent; color: #94a3b8; border: 1px solid #334155; cursor: pointer; }
+      #lang button:first-child { border-radius: 4px 0 0 4px; }
+      #lang button:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
+      #lang button[aria-pressed="true"] { background: #334155; color: #e2e8f0; }
+      #back { margin-bottom: 8px; padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; }
+      dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+      dt { color: #94a3b8; }
+      dd { margin: 0; text-align: right; }
       #hint, #credits { margin-top: 8px; color: #94a3b8; font-size: 12px; }
       #credits a { color: inherit; }
+      table { width: 100%; border-collapse: collapse; }
+      th { color: #94a3b8; font-weight: 500; text-align: right; padding: 2px 4px; }
+      th:first-child { text-align: left; }
+      td { padding: 2px 4px; }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      tr.active { background: #1e293b; }
+      .rowbtn { background: none; border: 0; padding: 0; color: #e2e8f0; text-align: left; cursor: pointer; font: inherit; text-decoration: underline dotted #64748b; }
       .alert { color: #f87171; font-weight: 600; }
     </style>
   </head>
   <body>
     <canvas id="view"></canvas>
-    <div id="hud">
-      <h1>Digital Twin Lab</h1>
+    <div id="hud" class="panel">
+      <div id="hud-head">
+        <h1>Digital Twin Lab</h1>
+        <fieldset id="lang">
+          <legend class="sr-only" data-i18n="lang.label">Language</legend>
+          <button type="button" data-lang="en">EN</button><button type="button" data-lang="vi">VI</button>
+        </fieldset>
+      </div>
+      <button type="button" id="back" data-i18n="hud.back" hidden>← Township</button>
       <dl id="info"></dl>
-      <div id="hint">Click a room to select it. Press A to toggle its AC.</div>
+      <div id="hint"></div>
       <div id="credits">
-        Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).
-        Air quality: <a href="https://aqicn.org/" target="_blank" rel="noopener noreferrer">World Air Quality Index Project</a>.
+        <span data-i18n="credits.weather">Weather:</span>
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0) ·
+        <span data-i18n="credits.air">Air quality:</span>
+        <a href="https://aqicn.org/" target="_blank" rel="noopener noreferrer">World Air Quality Index Project</a> ·
+        <span data-i18n="credits.buildings">Buildings:</span>
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a> (ODbL)
       </div>
     </div>
+    <aside id="towns" class="panel">
+      <h2 data-i18n="towns.title">Vinhomes Smart City · buildings (OSM)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="towns.name">Name</th>
+            <th data-i18n="towns.floors">Floors</th>
+            <th data-i18n="towns.avg">Avg °C</th>
+            <th data-i18n="towns.alerts">Alerts</th>
+            <th data-i18n="towns.kwh">AC kWh</th>
+          </tr>
+        </thead>
+        <tbody id="blist-body"></tbody>
+      </table>
+    </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
