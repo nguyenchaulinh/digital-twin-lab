@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sim": "node server/sim.mjs",
+    "sim": "node --use-system-ca --env-file-if-exists=.env server/sim.mjs",
+    "test:feeds": "node server/feeds.test.mjs",
     "dev": "vite",
     "build": "vite build"
   },

@@ -12,7 +12,8 @@
       #hud dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
       #hud dt { color: #94a3b8; }
       #hud dd { margin: 0; text-align: right; }
-      #hint { margin-top: 8px; color: #94a3b8; font-size: 12px; }
+      #hint, #credits { margin-top: 8px; color: #94a3b8; font-size: 12px; }
+      #credits a { color: inherit; }
       .alert { color: #f87171; font-weight: 600; }
     </style>
   </head>
@@ -22,6 +23,10 @@
       <h1>Digital Twin Lab</h1>
       <dl id="info"></dl>
       <div id="hint">Click a room to select it. Press A to toggle its AC.</div>
+      <div id="credits">
+        Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).
+        Air quality: <a href="https://aqicn.org/" target="_blank" rel="noopener noreferrer">World Air Quality Index Project</a>.
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -1,6 +1,8 @@
 // "Physical world" simulator: 3 floors x 2 rooms, each with a thermal model.
 // Streams telemetry over WebSocket and accepts AC commands (twin -> physical).
+// Outside temperature and air quality are live Hanoi data when available.
 import { WebSocketServer } from "ws";
+import { HANOI, fetchHanoiAir, fetchHanoiTemp } from "./feeds.mjs";
 
 const HOST = "127.0.0.1";
 const PORT = 8787;
@@ -8,7 +10,14 @@ const ALLOWED_ORIGINS = new Set(["http://localhost:5173", "http://127.0.0.1:5173
 const TICK_MS = 1000;
 const STEP_MIN = 5; // 1 tick = 5 simulated minutes
 
-const OUTSIDE_BASE = 32;
+const WEATHER_POLL_MS = 10 * 60 * 1000;
+const AIR_POLL_MS = 15 * 60 * 1000;
+const STALE_MS = 60 * 60 * 1000; // live readings older than this are ignored
+
+const AQICN_TOKEN = process.env.AQICN_TOKEN;
+const AQICN_STATION = process.env.AQICN_STATION ?? "@8641"; // US Embassy Hanoi
+
+const OUTSIDE_BASE = 32; // synthetic fallback only
 const K_ENV = 0.01; // heat exchange with outside, per minute
 const K_AC = 0.08; // cooling strength, per minute
 const AC_SETPOINT = 22;
@@ -27,16 +36,54 @@ for (let floor = 1; floor <= 3; floor++) {
 }
 const roomById = new Map(rooms.map((r) => [r.id, r]));
 
-let simMinutes = 0;
+// Start the simulated clock at the current local time in Hanoi
+function hanoiMinutesOfDay() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: HANOI.timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const part = (type) => Number(parts.find((p) => p.type === type).value);
+  return part("hour") * 60 + part("minute");
+}
 
-function outsideTemp() {
+let simMinutes = hanoiMinutesOfDay();
+
+// --- Live feeds: keep the last good reading, drop it once stale ---
+let liveTemp = null; // { value, fetchedAt }
+let liveAir = null; // { aqi, pm25, station, updated, fetchedAt }
+
+async function pollWeather() {
+  try {
+    liveTemp = { value: await fetchHanoiTemp(), fetchedAt: Date.now() };
+  } catch (err) {
+    console.warn("[weather] update failed:", err.message);
+  }
+}
+
+async function pollAir() {
+  try {
+    liveAir = { ...(await fetchHanoiAir(AQICN_TOKEN, AQICN_STATION)), fetchedAt: Date.now() };
+  } catch (err) {
+    console.warn("[air] update failed:", err.message);
+  }
+}
+
+const isFresh = (reading) => reading && Date.now() - reading.fetchedAt < STALE_MS;
+
+function syntheticOutside() {
   // Daily cycle with a 24h period, peak mid-afternoon
   return OUTSIDE_BASE + 4 * Math.sin(((simMinutes / 60 - 9) / 24) * 2 * Math.PI);
 }
 
-function step() {
+function outsideReading() {
+  if (isFresh(liveTemp)) return { temp: liveTemp.value, source: "open-meteo" };
+  return { temp: syntheticOutside(), source: "synthetic" };
+}
+
+function step(outside) {
   simMinutes += STEP_MIN;
-  const outside = outsideTemp();
   for (const r of rooms) {
     const cooling = r.ac ? K_AC * Math.max(r.temp - AC_SETPOINT, 0) : 0;
     const noise = (Math.random() - 0.5) * 0.05;
@@ -44,11 +91,16 @@ function step() {
   }
 }
 
-function snapshot() {
+function snapshot(outside) {
+  const air = isFresh(liveAir)
+    ? { aqi: liveAir.aqi, pm25: liveAir.pm25, station: liveAir.station, updated: liveAir.updated }
+    : null;
   return JSON.stringify({
     type: "snapshot",
     simMinutes,
-    outside: Number(outsideTemp().toFixed(2)),
+    outside: Number(outside.temp.toFixed(2)),
+    outsideSource: outside.source,
+    air,
     rooms: rooms.map(({ id, floor, temp, ac }) => ({
       id,
       floor,
@@ -82,11 +134,21 @@ wss.on("connection", (ws) => {
 });
 
 setInterval(() => {
-  step();
-  const payload = snapshot();
+  const outside = outsideReading();
+  step(outside.temp);
+  const payload = snapshot(outside);
   for (const client of wss.clients) {
     if (client.readyState === client.OPEN) client.send(payload);
   }
 }, TICK_MS);
+
+pollWeather();
+setInterval(pollWeather, WEATHER_POLL_MS);
+if (AQICN_TOKEN) {
+  pollAir();
+  setInterval(pollAir, AIR_POLL_MS);
+} else {
+  console.log("AQICN_TOKEN is not set: air quality is disabled");
+}
 
 console.log(`Simulator listening on ws://${HOST}:${PORT}`);

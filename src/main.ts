@@ -9,8 +9,17 @@ interface RoomState {
   ac: boolean;
 }
 
+interface AirState {
+  aqi: number;
+  pm25: number | null;
+  station: string;
+  updated: string;
+}
+
 interface Snapshot {
   outside: number;
+  outsideSource: "open-meteo" | "synthetic";
+  air: AirState | null;
   simMinutes: number;
   rooms: RoomState[];
 }
@@ -63,11 +72,33 @@ function tempColor(temp: number): THREE.Color {
 let latest: Snapshot | null = null;
 let selectedId: string | null = null;
 
+function isAir(air: unknown): air is AirState {
+  const a = air as AirState;
+  return (
+    Number.isInteger(a?.aqi) &&
+    (a.pm25 === null || Number.isFinite(a.pm25)) &&
+    typeof a.station === "string" &&
+    typeof a.updated === "string"
+  );
+}
+
+// US EPA AQI breakpoints
+function aqiLabel(aqi: number): string {
+  if (aqi <= 50) return "Good";
+  if (aqi <= 100) return "Moderate";
+  if (aqi <= 150) return "Unhealthy for sensitive groups";
+  if (aqi <= 200) return "Unhealthy";
+  if (aqi <= 300) return "Very unhealthy";
+  return "Hazardous";
+}
+
 function isSnapshot(data: unknown): data is Snapshot {
   const d = data as Snapshot;
   return (
     Array.isArray(d?.rooms) &&
     Number.isFinite(d.outside) &&
+    (d.outsideSource === "open-meteo" || d.outsideSource === "synthetic") &&
+    (d.air === null || isAir(d.air)) &&
     Number.isFinite(d.simMinutes) &&
     d.rooms.every(
       (r) =>
@@ -143,7 +174,15 @@ function renderInfo() {
   const hh = String(Math.floor((latest.simMinutes % 1440) / 60)).padStart(2, "0");
   const mm = String(latest.simMinutes % 60).padStart(2, "0");
   addRow("Sim time", `day ${day} ${hh}:${mm}`);
-  addRow("Outside", `${latest.outside.toFixed(1)} °C`);
+  const live = latest.outsideSource === "open-meteo";
+  addRow("Outside (Hanoi)", `${latest.outside.toFixed(1)} °C · ${live ? "live" : "synthetic"}`, !live);
+  if (latest.air) {
+    addRow("AQI", `${latest.air.aqi} · ${aqiLabel(latest.air.aqi)}`, latest.air.aqi > 150);
+    if (latest.air.pm25 !== null) addRow("PM2.5", `${latest.air.pm25} µg/m³`);
+    addRow("Station", latest.air.station);
+  } else {
+    addRow("AQI", "n/a");
+  }
   const alerts = latest.rooms.filter((r) => r.temp > ALERT_TEMP).length;
   addRow("Rooms over limit", `${alerts} / ${latest.rooms.length}`, alerts > 0);
 
