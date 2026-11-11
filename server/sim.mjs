@@ -119,6 +119,8 @@ const wss = new WebSocketServer({
 });
 
 wss.on("connection", (ws) => {
+  // ws emits 'error' on protocol violations such as an oversized frame; without a listener it crashes the process
+  ws.on("error", () => {});
   ws.on("message", (raw) => {
     let msg;
     try {
