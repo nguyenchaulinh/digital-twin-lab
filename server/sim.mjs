@@ -4,7 +4,7 @@
 // Outside temperature and air quality are live Hanoi data when available.
 import { WebSocketServer } from "ws";
 import { HANOI, fetchHanoiAir, fetchHanoiTemp } from "./feeds.mjs";
-import { instrumentedFloors, loadTownship } from "./township.mjs";
+import { instrumentedFloors, loadTownships } from "./township.mjs";
 
 const HOST = "127.0.0.1";
 const PORT = 8787;
@@ -27,10 +27,10 @@ const AC_SETPOINT = 22;
 const AC_POWER_KW = 1; // assumption: rated electrical power of one room unit
 const FULL_LOAD_COOLING = K_AC * 8; // the unit runs at full power 8 °C above the setpoint
 
-const township = loadTownship(new URL("../data/township.json", import.meta.url));
+const allBuildings = loadTownships(new URL("../data/townships/", import.meta.url)).flatMap((t) => t.buildings);
 
 const rooms = [];
-for (const building of township) {
+for (const building of allBuildings) {
   for (const floor of instrumentedFloors(building.levels)) {
     for (const side of ["A", "B"]) {
       rooms.push({
@@ -59,7 +59,7 @@ function hanoiMinutesOfDay() {
 }
 
 let simMinutes = hanoiMinutesOfDay();
-const kwhByBuilding = new Map(township.map((b) => [b.id, 0])); // cumulative AC energy since start
+const kwhByBuilding = new Map(allBuildings.map((b) => [b.id, 0])); // cumulative AC energy since start
 
 // --- Live feeds: keep the last good reading, drop it once stale ---
 let liveTemp = null; // { value, fetchedAt }
@@ -117,7 +117,7 @@ function snapshot(outside) {
     air,
     acKwh: Number([...kwhByBuilding.values()].reduce((sum, kwh) => sum + kwh, 0).toFixed(3)),
     acPowerKw: AC_POWER_KW,
-    buildings: township.map((b) => ({ id: b.id, acKwh: Number(kwhByBuilding.get(b.id).toFixed(3)) })),
+    buildings: allBuildings.map((b) => ({ id: b.id, acKwh: Number(kwhByBuilding.get(b.id).toFixed(3)) })),
     rooms: rooms.map(({ id, building, floor, temp, ac }) => ({
       id,
       building,

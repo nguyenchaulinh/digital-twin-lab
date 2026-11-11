@@ -9,20 +9,23 @@
       #view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
       .panel { position: fixed; top: 12px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 8px; }
       #hud { left: 12px; width: 320px; max-height: calc(100vh - 48px); overflow-y: auto; }
-      #towns { right: 12px; width: 380px; max-height: calc(100vh - 48px); overflow-y: auto; }
+      #towns, #detail { right: 12px; width: 380px; max-height: calc(100vh - 48px); overflow-y: auto; }
       h1, h2 { margin: 0 0 8px; font-size: 15px; }
+      h3 { margin: 12px 0 4px; font-size: 13px; font-weight: 500; color: #94a3b8; }
       #hud-head { display: flex; justify-content: space-between; align-items: center; }
-      #lang { margin: 0; padding: 0; border: 0; }
+      .segmented { margin: 0; padding: 0; border: 0; display: flex; }
       .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-      #lang button { padding: 2px 8px; background: transparent; color: #94a3b8; border: 1px solid #334155; cursor: pointer; }
-      #lang button:first-child { border-radius: 4px 0 0 4px; }
-      #lang button:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
-      #lang button[aria-pressed="true"] { background: #334155; color: #e2e8f0; }
-      #back { margin-bottom: 8px; padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; }
+      .segmented button { padding: 2px 8px; background: transparent; color: #94a3b8; border: 1px solid #334155; cursor: pointer; font: inherit; }
+      .segmented button:first-of-type { border-radius: 4px 0 0 4px; }
+      .segmented button:last-of-type { border-radius: 0 4px 4px 0; }
+      .segmented button + button { border-left: 0; }
+      .segmented button[aria-pressed="true"] { background: #334155; color: #e2e8f0; }
+      #township-switch { margin-bottom: 8px; }
+      #back { padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font: inherit; }
       dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
       dt { color: #94a3b8; }
       dd { margin: 0; text-align: right; }
-      #hint, #credits { margin-top: 8px; color: #94a3b8; font-size: 12px; }
+      #hint, #credits, #detail-legend { margin-top: 8px; color: #94a3b8; font-size: 12px; }
       #credits a { color: inherit; }
       table { width: 100%; border-collapse: collapse; }
       th { color: #94a3b8; font-weight: 500; text-align: right; padding: 2px 4px; }
@@ -34,6 +37,16 @@
       #blist-body tr { cursor: pointer; }
       .rowbtn { background: none; border: 0; padding: 0; color: #e2e8f0; text-align: left; cursor: pointer; font: inherit; text-decoration: underline dotted #64748b; }
       .alert { color: #f87171; font-weight: 600; }
+      #detail-name { margin: 8px 0 2px; font-size: 18px; }
+      #detail-sub { margin-bottom: 8px; color: #94a3b8; font-size: 12px; }
+      #detail-sub a { color: #7dd3fc; }
+      #floors { max-height: 34vh; overflow-y: auto; }
+      #floor-body td:first-child { color: #94a3b8; }
+      .cell { background: none; border: 1px solid transparent; border-radius: 3px; padding: 0 6px; color: inherit; font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+      .cell.selected { border-color: #fbbf24; }
+      .cell.ac-on { border-bottom: 2px solid #38bdf8; }
+      .cell.hover { background: #0c4a6e; }
+      .cell.alert { color: #f87171; font-weight: 600; }
       #tooltip { position: fixed; z-index: 10; pointer-events: none; padding: 2px 8px; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; border-radius: 4px; font-size: 12px; white-space: nowrap; }
     </style>
   </head>
@@ -43,12 +56,11 @@
     <div id="hud" class="panel">
       <div id="hud-head">
         <h1>Digital Twin Lab</h1>
-        <fieldset id="lang">
+        <fieldset id="lang" class="segmented">
           <legend class="sr-only" data-i18n="lang.label">Language</legend>
           <button type="button" data-lang="en">EN</button><button type="button" data-lang="vi">VI</button>
         </fieldset>
       </div>
-      <button type="button" id="back" data-i18n="hud.back" hidden>← Township</button>
       <dl id="info"></dl>
       <div id="hint"></div>
       <div id="credits">
@@ -56,12 +68,15 @@
         <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0) ·
         <span data-i18n="credits.air">Air quality:</span>
         <a href="https://aqicn.org/" target="_blank" rel="noopener noreferrer">World Air Quality Index Project</a> ·
-        <span data-i18n="credits.buildings">Buildings:</span>
+        <span data-i18n="credits.buildings">Map data:</span>
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a> (ODbL)
       </div>
     </div>
-    <aside id="towns" class="panel">
-      <h2 data-i18n="towns.title">Vinhomes Smart City · buildings (OSM)</h2>
+    <aside id="towns" class="panel" aria-labelledby="towns-title">
+      <fieldset id="township-switch" class="segmented">
+        <legend class="sr-only" data-i18n="towns.switch">Township</legend>
+      </fieldset>
+      <h2 id="towns-title" data-i18n="towns.title">Buildings (OSM)</h2>
       <table>
         <thead>
           <tr>
@@ -74,6 +89,26 @@
         </thead>
         <tbody id="blist-body"></tbody>
       </table>
+    </aside>
+    <aside id="detail" class="panel" aria-labelledby="detail-name" hidden>
+      <button type="button" id="back" data-i18n="hud.back">← Township</button>
+      <h2 id="detail-name">–</h2>
+      <div id="detail-sub"><span id="detail-where"></span> · <a id="detail-osm" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></div>
+      <dl id="detail-facts"></dl>
+      <h3 data-i18n="hud.instrumented">Instrumented floors</h3>
+      <div id="floors">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="detail.colFloor">Floor</th>
+              <th data-i18n="detail.colA">Room A °C</th>
+              <th data-i18n="detail.colB">Room B °C</th>
+            </tr>
+          </thead>
+          <tbody id="floor-body"></tbody>
+        </table>
+      </div>
+      <div id="detail-legend" data-i18n="detail.legend">Click a value to select the room. Underlined: AC on.</div>
     </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>

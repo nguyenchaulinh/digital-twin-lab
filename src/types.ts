@@ -29,7 +29,7 @@ export interface Snapshot {
   rooms: RoomState[];
 }
 
-const ROOM_ID = /^B\d{1,2}-F\d{1,3}-[AB]$/;
+const ROOM_ID = /^[A-Z]\d{1,2}-F\d{1,3}-[AB]$/;
 const MAX_ROOMS = 1000;
 const MAX_BUILDINGS = 50;
 const MAX_FLOOR = 200;
