@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { advise, summarize, type AdviceAction } from "./advisor";
 import { ALERT_TEMP, predictTemp } from "./model";
 
 interface RoomState {
@@ -20,6 +21,8 @@ interface Snapshot {
   outside: number;
   outsideSource: "open-meteo" | "synthetic";
   air: AirState | null;
+  acKwh: number;
+  acPowerKw: number;
   simMinutes: number;
   rooms: RoomState[];
 }
@@ -28,6 +31,17 @@ const WS_URL = "ws://127.0.0.1:8787";
 const ROOM_ID = /^F[1-3]-[AB]$/;
 const TEMP_MIN = 22;
 const TEMP_MAX = 36;
+
+// Demo only: ?demoAqi=160 overrides the AQI fed to the advisor, to see the health-vs-energy rule at work
+const demoParam = new URLSearchParams(location.search).get("demoAqi");
+const DEMO_AQI = demoParam !== null && /^\d{1,3}$/.test(demoParam) ? Number(demoParam) : null;
+
+const ADVICE_LABEL: Record<AdviceAction, string> = {
+  "open-windows": "Open windows",
+  "run-ac": "Run AC",
+  "keep-closed": "Keep windows closed",
+  "no-action": "No action",
+};
 
 // --- Layer 5 (view): scene ---
 const canvas = document.getElementById("view") as HTMLCanvasElement;
@@ -99,6 +113,10 @@ function isSnapshot(data: unknown): data is Snapshot {
     Number.isFinite(d.outside) &&
     (d.outsideSource === "open-meteo" || d.outsideSource === "synthetic") &&
     (d.air === null || isAir(d.air)) &&
+    Number.isFinite(d.acKwh) &&
+    d.acKwh >= 0 &&
+    Number.isFinite(d.acPowerKw) &&
+    d.acPowerKw >= 0 &&
     Number.isFinite(d.simMinutes) &&
     d.rooms.every(
       (r) =>
@@ -185,6 +203,17 @@ function renderInfo() {
   }
   const alerts = latest.rooms.filter((r) => r.temp > ALERT_TEMP).length;
   addRow("Rooms over limit", `${alerts} / ${latest.rooms.length}`, alerts > 0);
+  addRow("AC energy (sim)", `${latest.acKwh.toFixed(1)} kWh`);
+
+  // Advisor: health first, so the AQI decides before temperature does
+  const snap = latest;
+  const aqiForAdvice = DEMO_AQI ?? snap.air?.aqi ?? null;
+  if (DEMO_AQI !== null) addRow("AQI (demo override)", String(DEMO_AQI), true);
+  const adviceFor = (r: RoomState) =>
+    advise({ roomTemp: r.temp, ac: r.ac, outsideTemp: snap.outside, aqi: aqiForAdvice, acPowerKw: snap.acPowerKw });
+  const summary = summarize(snap.rooms.map(adviceFor));
+  const saving = summary.saveKw > 0 ? ` · save up to ${summary.saveKw.toFixed(1)} kW` : "";
+  addRow("Ventilate instead of AC", `${summary.counts["open-windows"]} rooms${saving}`);
 
   const room = latest.rooms.find((r) => r.id === selectedId);
   if (!room) return;
@@ -193,6 +222,9 @@ function renderInfo() {
   addRow("AC", room.ac ? "on" : "off");
   addRow("Twin +30min (AC on)", `${predictTemp(room.temp, latest.outside, true, 30).toFixed(1)} °C`);
   addRow("Twin +30min (AC off)", `${predictTemp(room.temp, latest.outside, false, 30).toFixed(1)} °C`);
+  const advice = adviceFor(room);
+  addRow("Advice", ADVICE_LABEL[advice.action]);
+  addRow("Why", advice.reason);
   // Highlight the selected room by edge scale
   for (const [id, mesh] of meshes) mesh.scale.setScalar(id === room.id ? 1.04 : 1);
 }

@@ -22,6 +22,8 @@ const OUTSIDE_BASE = 32; // synthetic fallback only
 const K_ENV = 0.01; // heat exchange with outside, per minute
 const K_AC = 0.08; // cooling strength, per minute
 const AC_SETPOINT = 22;
+const AC_POWER_KW = 1; // assumption: rated electrical power of one room unit
+const FULL_LOAD_COOLING = K_AC * 8; // the unit runs at full power 8 °C above the setpoint
 
 const rooms = [];
 for (let floor = 1; floor <= 3; floor++) {
@@ -50,6 +52,7 @@ function hanoiMinutesOfDay() {
 }
 
 let simMinutes = hanoiMinutesOfDay();
+let acKwh = 0; // cumulative AC energy since start
 
 // --- Live feeds: keep the last good reading, drop it once stale ---
 let liveTemp = null; // { value, fetchedAt }
@@ -87,6 +90,8 @@ function step(outside) {
   simMinutes += STEP_MIN;
   for (const r of rooms) {
     const cooling = r.ac ? K_AC * Math.max(r.temp - AC_SETPOINT, 0) : 0;
+    // Modulating unit: power follows the cooling effort, so it idles near the setpoint
+    acKwh += AC_POWER_KW * Math.min(cooling / FULL_LOAD_COOLING, 1) * (STEP_MIN / 60);
     const noise = (Math.random() - 0.5) * 0.05;
     r.temp += STEP_MIN * (K_ENV * (outside - r.temp) + r.heat - cooling) + noise;
   }
@@ -102,6 +107,8 @@ function snapshot(outside) {
     outside: Number(outside.temp.toFixed(2)),
     outsideSource: outside.source,
     air,
+    acKwh: Number(acKwh.toFixed(3)),
+    acPowerKw: AC_POWER_KW,
     rooms: rooms.map(({ id, floor, temp, ac }) => ({
       id,
       floor,
@@ -145,10 +152,10 @@ setInterval(() => {
   }
 }, TICK_MS);
 
-pollWeather();
+void pollWeather();
 setInterval(pollWeather, WEATHER_POLL_MS);
 if (AQICN_TOKEN) {
-  pollAir();
+  void pollAir();
   setInterval(pollAir, AIR_POLL_MS);
 } else {
   console.log("AQICN_TOKEN is not set: air quality is disabled");
