@@ -1,0 +1,20 @@
+{
+  "name": "digital-twin-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sim": "node server/sim.mjs",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "@types/ws": "^8.18.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
