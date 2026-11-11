@@ -68,6 +68,7 @@ function openBuilding(id: string): void {
   const rooms = roomsOf(latest, id);
   if (rooms.length === 0) return;
   disposeBuilding();
+  setHover(null);
   buildingView = createBuildingView(rooms);
   scene.add(buildingView.group);
   townshipView.group.visible = false;
@@ -115,15 +116,62 @@ let pointerDown: { x: number; y: number } | null = null;
 canvas.addEventListener("pointerdown", (ev) => {
   pointerDown = { x: ev.clientX, y: ev.clientY };
 });
-canvas.addEventListener("click", (ev) => {
-  if (pointerDown && Math.hypot(ev.clientX - pointerDown.x, ev.clientY - pointerDown.y) > CLICK_SLOP_PX) return;
+
+function pickAt(clientX: number, clientY: number): THREE.Intersection | undefined {
   const rect = canvas.getBoundingClientRect();
   const ndc = new THREE.Vector2(
-    ((ev.clientX - rect.left) / rect.width) * 2 - 1,
-    -((ev.clientY - rect.top) / rect.height) * 2 + 1,
+    ((clientX - rect.left) / rect.width) * 2 - 1,
+    -((clientY - rect.top) / rect.height) * 2 + 1,
   );
   raycaster.setFromCamera(ndc, camera);
-  const hit = raycaster.intersectObjects(buildingView?.pickables ?? townshipView.pickables, false)[0];
+  return raycaster.intersectObjects(buildingView?.pickables ?? townshipView.pickables, false)[0];
+}
+
+// --- Hover: glow the building under the pointer and name it in a tooltip (township view only) ---
+const tooltip = document.getElementById("tooltip") as HTMLElement;
+const TOOLTIP_OFFSET_PX = 14;
+let hoveredId: string | null = null;
+let hoverFrame = 0;
+let pointerAt = { x: 0, y: 0 };
+
+function setHover(id: string | null): void {
+  if (id !== hoveredId) {
+    hoveredId = id;
+    townshipView.setHover(id);
+    canvas.style.cursor = id ? "pointer" : "";
+  }
+  const name = township.buildings.find((b) => b.id === id)?.name;
+  if (!name) {
+    tooltip.hidden = true;
+    return;
+  }
+  tooltip.textContent = name;
+  tooltip.hidden = false;
+  // Keep the tooltip inside the window
+  const x = Math.min(pointerAt.x + TOOLTIP_OFFSET_PX, window.innerWidth - tooltip.offsetWidth - 8);
+  tooltip.style.left = `${Math.max(x, 8)}px`;
+  tooltip.style.top = `${pointerAt.y + TOOLTIP_OFFSET_PX}px`;
+}
+
+canvas.addEventListener("pointermove", (ev) => {
+  // Dragging moves the camera, and an open building has no hover
+  if (buildingView || ev.buttons !== 0) {
+    setHover(null);
+    return;
+  }
+  pointerAt = { x: ev.clientX, y: ev.clientY };
+  if (hoverFrame) return; // one pick per frame
+  hoverFrame = requestAnimationFrame(() => {
+    hoverFrame = 0;
+    const hit = pickAt(pointerAt.x, pointerAt.y);
+    setHover(hit ? (hit.object.userData.buildingId as string) : null);
+  });
+});
+canvas.addEventListener("pointerleave", () => setHover(null));
+
+canvas.addEventListener("click", (ev) => {
+  if (pointerDown && Math.hypot(ev.clientX - pointerDown.x, ev.clientY - pointerDown.y) > CLICK_SLOP_PX) return;
+  const hit = pickAt(ev.clientX, ev.clientY);
   if (buildingView) {
     selectedRoomId = hit ? (hit.object.userData.roomId as string) : null;
     refresh();

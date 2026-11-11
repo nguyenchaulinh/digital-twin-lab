@@ -12,6 +12,16 @@ export interface TownshipView {
   center: THREE.Vector3;
   radius: number;
   setTemps: (avgByBuilding: Map<string, number>) => void;
+  setHover: (buildingId: string | null) => void;
+}
+
+const HOVER_GLOW = 0x38bdf8;
+
+function glow(mesh: THREE.Mesh | undefined, on: boolean): void {
+  if (!mesh) return;
+  const material = mesh.material as THREE.MeshStandardMaterial;
+  material.emissive.set(on ? HOVER_GLOW : 0x000000);
+  material.emissiveIntensity = on ? 0.6 : 0;
 }
 
 // A footprint is [east, north]; the shape is extruded along +z and rotated so that +z becomes up
@@ -48,6 +58,8 @@ export function createTownshipView(data: TownshipData): TownshipView {
   const reach = data.buildings.flatMap((b) => b.footprint.map(([east, north]) => Math.hypot(east, north)));
   const tallest = Math.max(...data.buildings.map((b) => b.levels * METRES_PER_LEVEL));
 
+  let hovered: string | null = null;
+
   return {
     group,
     pickables: [...meshes.values()],
@@ -58,6 +70,12 @@ export function createTownshipView(data: TownshipData): TownshipView {
         const avg = avgByBuilding.get(id);
         (mesh.material as THREE.MeshStandardMaterial).color.set(avg === undefined ? NO_DATA_COLOR : tempColor(avg));
       }
+    },
+    setHover(buildingId) {
+      if (buildingId === hovered) return;
+      glow(hovered ? meshes.get(hovered) : undefined, false);
+      hovered = buildingId;
+      glow(buildingId ? meshes.get(buildingId) : undefined, true);
     },
   };
 }

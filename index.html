@@ -32,10 +32,12 @@
       tr.active { background: #1e293b; }
       .rowbtn { background: none; border: 0; padding: 0; color: #e2e8f0; text-align: left; cursor: pointer; font: inherit; text-decoration: underline dotted #64748b; }
       .alert { color: #f87171; font-weight: 600; }
+      #tooltip { position: fixed; z-index: 10; pointer-events: none; padding: 2px 8px; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; border-radius: 4px; font-size: 12px; white-space: nowrap; }
     </style>
   </head>
   <body>
     <canvas id="view"></canvas>
+    <div id="tooltip" role="tooltip" hidden></div>
     <div id="hud" class="panel">
       <div id="hud-head">
         <h1>Digital Twin Lab</h1>
