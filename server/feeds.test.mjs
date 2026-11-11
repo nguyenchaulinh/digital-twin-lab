@@ -23,6 +23,11 @@ assert.deepEqual(parseAirFeed(feed), {
   updated: "2026-11-11T15:00:00+07:00",
 });
 assert.equal(parseAirFeed({ status: "ok", data: { aqi: 40 } }).pm25, null);
+
+// Full real station name must not be truncated; absurdly long ones are capped
+const longName = "United Nations International School of Hanoi, Vietnam (Trường Quốc tế Liên Hợp Quốc Hà Nội)";
+assert.equal(parseAirFeed({ status: "ok", data: { aqi: 68, city: { name: longName } } }).station, longName);
+assert.equal(parseAirFeed({ status: "ok", data: { aqi: 68, city: { name: "x".repeat(500) } } }).station.length, 200);
 assert.throws(() => parseAirFeed({ status: "error", data: "Invalid key" }), /status not ok/);
 assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: "-" } }), /no current data/);
 assert.throws(() => parseAirFeed({ status: "ok", data: { aqi: "abc" } }), /unexpected air quality payload/);

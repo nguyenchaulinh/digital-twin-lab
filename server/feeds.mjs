@@ -4,6 +4,7 @@ export const HANOI = { latitude: 21.0285, longitude: 105.8542, timeZone: "Asia/H
 
 const FETCH_TIMEOUT_MS = 8000;
 const STATION_PATTERN = /^@\d{1,7}$/;
+const STATION_NAME_MAX = 200; // real names with a Vietnamese translation reach ~95 chars
 
 async function fetchJson(url) {
   let res;
@@ -35,7 +36,7 @@ export function parseAirFeed(body) {
   return {
     aqi,
     pm25: Number.isFinite(pm25) ? pm25 : null,
-    station: String(data?.city?.name ?? "unknown").slice(0, 80),
+    station: String(data?.city?.name ?? "unknown").slice(0, STATION_NAME_MAX),
     updated: String(data?.time?.iso ?? "").slice(0, 40),
   };
 }
