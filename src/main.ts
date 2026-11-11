@@ -127,19 +127,30 @@ function pickAt(clientX: number, clientY: number): THREE.Intersection | undefine
   return raycaster.intersectObjects(buildingView?.pickables ?? townshipView.pickables, false)[0];
 }
 
-// --- Hover: glow the building under the pointer and name it in a tooltip (township view only) ---
+// --- Hover (township view only): the building glows in 3D and its table row is highlighted, whether
+// the pointer is over the building or over its row. Over the canvas it also gets a name tooltip. ---
 const tooltip = document.getElementById("tooltip") as HTMLElement;
 const TOOLTIP_OFFSET_PX = 14;
-let hoveredId: string | null = null;
+let highlightedId: string | null = null;
 let hoverFrame = 0;
 let pointerAt = { x: 0, y: 0 };
 
+function highlight(id: string | null): void {
+  if (id === highlightedId) return;
+  highlightedId = id;
+  townshipView.setHover(id);
+  table.setHover(id);
+}
+
+// While a building is open the township is hidden, so only the row itself is highlighted
+function onRowHover(id: string | null): void {
+  if (buildingView) table.setHover(id);
+  else highlight(id);
+}
+
 function setHover(id: string | null): void {
-  if (id !== hoveredId) {
-    hoveredId = id;
-    townshipView.setHover(id);
-    canvas.style.cursor = id ? "pointer" : "";
-  }
+  highlight(id);
+  canvas.style.cursor = id ? "pointer" : "";
   const name = township.buildings.find((b) => b.id === id)?.name;
   if (!name) {
     tooltip.hidden = true;
@@ -185,7 +196,7 @@ window.addEventListener("keydown", (ev) => {
 });
 
 // --- HUD ---
-const updateTable = createBuildingTable(township.buildings, openBuilding);
+const table = createBuildingTable(township.buildings, openBuilding, onRowHover);
 
 function buildRows(snap: Snapshot): Row[] {
   const scope = openBuildingId ? roomsOf(snap, openBuildingId) : snap.rooms;
@@ -265,7 +276,7 @@ function refresh(): void {
     const kwh = latest.buildings.find((e) => e.id === b.id)?.acKwh ?? 0;
     stats.set(b.id, { avgTemp: avg, alerts: rooms.filter((r) => r.temp > ALERT_TEMP).length, kwh });
   }
-  updateTable(stats, openBuildingId);
+  table.update(stats, openBuildingId);
   townshipView.setTemps(avgByBuilding);
   if (buildingView && openBuildingId) buildingView.setRooms(roomsOf(latest, openBuildingId), selectedRoomId);
 }

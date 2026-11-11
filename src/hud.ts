@@ -13,6 +13,11 @@ export interface BuildingStats {
   kwh: number;
 }
 
+export interface BuildingTable {
+  update: (stats: Map<string, BuildingStats>, activeId: string | null) => void;
+  setHover: (id: string | null) => void;
+}
+
 const info = document.getElementById("info") as HTMLElement;
 const hint = document.getElementById("hint") as HTMLElement;
 const backButton = document.getElementById("back") as HTMLButtonElement;
@@ -49,11 +54,13 @@ function numberCell(): HTMLTableCellElement {
 }
 
 // The table is built once and then updated in place: rebuilding it on every snapshot would swap
-// the buttons out from under a click in progress and drop keyboard focus.
+// the buttons out from under a click in progress and drop keyboard focus. Row states ("active",
+// "hover") are toggled with classList so that updates never overwrite each other.
 export function createBuildingTable(
   buildings: Array<{ id: string; name: string; levels: number }>,
   onOpen: (id: string) => void,
-): (stats: Map<string, BuildingStats>, activeId: string | null) => void {
+  onHover: (id: string | null) => void,
+): BuildingTable {
   const rows = buildings.map((b) => {
     const tr = document.createElement("tr");
     const nameCell = document.createElement("td");
@@ -61,7 +68,6 @@ export function createBuildingTable(
     button.type = "button";
     button.className = "rowbtn";
     button.textContent = b.name;
-    button.addEventListener("click", () => onOpen(b.id));
     nameCell.append(button);
     const levels = numberCell();
     levels.textContent = String(b.levels);
@@ -69,18 +75,30 @@ export function createBuildingTable(
     const alerts = numberCell();
     const kwh = numberCell();
     tr.append(nameCell, levels, avg, alerts, kwh);
+    // The whole row opens the building; a click on the name button bubbles up to here
+    tr.addEventListener("click", () => onOpen(b.id));
+    // Pointer and keyboard focus both count as "hovering" the row
+    tr.addEventListener("pointerenter", () => onHover(b.id));
+    tr.addEventListener("pointerleave", () => onHover(null));
+    tr.addEventListener("focusin", () => onHover(b.id));
+    tr.addEventListener("focusout", () => onHover(null));
     tableBody.append(tr);
     return { id: b.id, tr, avg, alerts, kwh };
   });
 
-  return (stats, activeId) => {
-    for (const row of rows) {
-      const s = stats.get(row.id);
-      row.tr.className = row.id === activeId ? "active" : "";
-      row.avg.textContent = s?.avgTemp == null ? "–" : fmt(s.avgTemp, 1);
-      row.alerts.textContent = s ? String(s.alerts) : "–";
-      row.alerts.className = s && s.alerts > 0 ? "num alert" : "num";
-      row.kwh.textContent = s ? fmt(s.kwh, 1) : "–";
-    }
+  return {
+    update(stats, activeId) {
+      for (const row of rows) {
+        const s = stats.get(row.id);
+        row.tr.classList.toggle("active", row.id === activeId);
+        row.avg.textContent = s?.avgTemp == null ? "–" : fmt(s.avgTemp, 1);
+        row.alerts.textContent = s ? String(s.alerts) : "–";
+        row.alerts.className = s && s.alerts > 0 ? "num alert" : "num";
+        row.kwh.textContent = s ? fmt(s.kwh, 1) : "–";
+      }
+    },
+    setHover(id) {
+      for (const row of rows) row.tr.classList.toggle("hover", row.id === id);
+    },
   };
 }

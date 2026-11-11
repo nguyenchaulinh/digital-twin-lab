@@ -8,7 +8,7 @@ A small learning project that builds a **digital twin of a township**: 8 real ap
 
 ## What it does
 
-- **Township view:** 3D footprints of the towers plus ~40 surrounding buildings, extruded by number of levels. Each tower is coloured by its average room temperature.
+- **Township view:** 3D footprints of the towers plus ~40 surrounding buildings, extruded by number of levels. Each tower is coloured by its average room temperature. Hovering a tower (or its row in the list) highlights both and shows the building name in a tooltip.
 - **Building view:** click a tower to see its instrumented rooms, select a room, and toggle its air conditioner (the command goes back to the simulator).
 - **Live outside data:** Hanoi temperature from Open-Meteo and air quality (AQI, PM2.5) from AQICN. If a feed is missing or stale the simulator falls back to a synthetic daily cycle and the HUD says so.
 - **Advisor:** per room, recommends *open windows*, *run AC*, *keep windows closed* or *no action*, with the reason and the maximum power that could be saved. Health comes first (see [policy](#advisor-policy)).

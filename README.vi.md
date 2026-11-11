@@ -8,7 +8,7 @@ Dự án học tập nhỏ, dựng **digital twin của một khu đô thị**: 
 
 ## Chức năng
 
-- **Chế độ khu đô thị:** hình khối 3D của các tòa tháp và khoảng 40 công trình xung quanh, đùn theo số tầng. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng.
+- **Chế độ khu đô thị:** hình khối 3D của các tòa tháp và khoảng 40 công trình xung quanh, đùn theo số tầng. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng. Di chuột vào một tòa (hoặc dòng của nó trong danh sách) sẽ làm sáng cả hai và hiện tên tòa trong tooltip.
 - **Chế độ tòa nhà:** bấm vào một tòa để xem các phòng có cảm biến, chọn phòng, bật/tắt điều hòa (lệnh được gửi ngược về simulator).
 - **Dữ liệu ngoài trời trực tiếp:** nhiệt độ Hà Nội từ Open-Meteo, chất lượng không khí (AQI, PM2.5) từ AQICN. Nếu nguồn thiếu hoặc quá hạn, simulator quay về chu kỳ ngày giả lập và HUD ghi rõ.
 - **Bộ khuyến nghị:** với từng phòng, khuyên *mở cửa sổ*, *bật điều hòa*, *giữ cửa sổ đóng* hoặc *không cần làm gì*, kèm lý do và công suất tối đa có thể tiết kiệm. Sức khỏe được ưu tiên (xem [chính sách](#chính-sách-khuyến-nghị)).
