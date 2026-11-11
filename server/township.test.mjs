@@ -16,13 +16,16 @@ assert.equal(tall.at(-1), 39);
 assert.ok(tall.every((f, i) => i === 0 || f > tall[i - 1]));
 
 // Validation rejects malformed data
-const ok = { id: "demo", buildings: [{ id: "S1", levels: 5 }] };
+const origin = { lat: 21, lon: 105.8 };
+const ok = { id: "demo", origin, buildings: [{ id: "S1", levels: 5 }] };
 assert.deepEqual(parseTownship(ok).buildings, [{ id: "S1", name: "S1", levels: 5 }]);
-const withBuildings = (buildings) => ({ id: "demo", buildings });
+const withBuildings = (buildings) => ({ id: "demo", origin, buildings });
 for (const bad of [
   null,
   {},
-  { id: "Bad Id", buildings: ok.buildings },
+  { id: "Bad Id", origin, buildings: ok.buildings },
+  { id: "demo", buildings: ok.buildings },
+  { id: "demo", origin: { lat: "21", lon: 105 }, buildings: ok.buildings },
   withBuildings([]),
   withBuildings([{ id: "x1", levels: 5 }]),
   withBuildings([{ id: "S1", levels: 0 }]),
@@ -32,12 +35,18 @@ for (const bad of [
   assert.throws(() => parseTownship(bad), /invalid township/);
 }
 
-// The committed data files parse, building ids are unique across them, and the geometry is sane
+// Ids may contain digits (townships found by discovery are numbered)
+assert.equal(parseTownship({ ...ok, id: "vn012" }).id, "vn012");
+
+// The committed data files parse and the geometry is sane
 const dir = new URL("../data/townships/", import.meta.url);
 const townships = loadTownships(dir);
 assert.ok(townships.length >= 2);
+const catalog = JSON.parse(readFileSync(new URL("../data/catalog.json", import.meta.url), "utf8"));
+assert.equal(catalog.length, townships.length);
+assert.ok(catalog.every((c) => townships.some((t) => t.id === c.id) && Number.isFinite(c.lat) && Number.isFinite(c.lon)));
 const isPoint = (p) => p.length === 2 && p.every(Number.isFinite);
-for (const file of readdirSync(dir)) {
+for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
   const raw = JSON.parse(readFileSync(new URL(file, dir), "utf8"));
   for (const item of [...raw.buildings, ...raw.context, ...raw.areas]) {
     assert.ok(item.footprint.length >= 3);

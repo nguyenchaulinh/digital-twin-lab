@@ -7,9 +7,11 @@
     <style>
       html, body { margin: 0; height: 100%; background: #0f172a; color: #e2e8f0; font: 14px/1.5 system-ui, sans-serif; }
       #view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      #map { position: fixed; inset: 0; }
+      .off { display: none !important; }
       .panel { position: fixed; top: 12px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 8px; }
       #hud { left: 12px; width: 320px; max-height: calc(100vh - 48px); overflow-y: auto; }
-      #towns, #detail { right: 12px; width: 380px; max-height: calc(100vh - 48px); overflow-y: auto; }
+      #towns, #detail, #places { right: 12px; width: 380px; max-height: calc(100vh - 48px); overflow-y: auto; }
       h1, h2 { margin: 0 0 8px; font-size: 15px; }
       h3 { margin: 12px 0 4px; font-size: 13px; font-weight: 500; color: #94a3b8; }
       #hud-head { display: flex; justify-content: space-between; align-items: center; }
@@ -20,7 +22,34 @@
       .segmented button:last-of-type { border-radius: 0 4px 4px 0; }
       .segmented button + button { border-left: 0; }
       .segmented button[aria-pressed="true"] { background: #334155; color: #e2e8f0; }
-      #township-switch { margin-bottom: 8px; }
+      #map-back { padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font: inherit; }
+      #towns-name { margin: 8px 0 0; font-size: 16px; }
+      #towns-place { margin-bottom: 8px; color: #94a3b8; font-size: 12px; }
+      #places-q { box-sizing: border-box; width: 100%; padding: 4px 8px; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; font: inherit; }
+      #places-count { margin: 4px 0; color: #94a3b8; font-size: 12px; }
+      #places-list { margin: 0; padding: 0; list-style: none; }
+      .placebtn { display: flex; flex-direction: column; width: 100%; padding: 4px 6px; background: none; border: 0; border-radius: 4px; color: #e2e8f0; text-align: left; cursor: pointer; font: inherit; }
+      .placebtn:hover, .placebtn:focus-visible { background: #0c4a6e; }
+      .placebtn small { color: #94a3b8; }
+      .text-buttons { display: flex; }
+      .text-buttons button { width: auto; padding: 0 10px; font: 13px/29px system-ui, sans-serif; color: #0f172a; }
+      .text-buttons button[aria-pressed="true"] { background: #0369a1; color: #fff; }
+      .maplibregl-popup-content .popup-link { display: inline-block; margin-top: 6px; color: #0369a1; font-weight: 600; }
+      .maplibregl-popup-content .popup-muted { margin-top: 6px; color: #475569; }
+      .maplibregl-popup-content .popup-osm { display: block; margin-top: 6px; color: #475569; font-size: 12px; }
+      .maplibregl-popup-content button.secondary { margin-left: 6px; background: #fff; color: #0369a1; border-color: #0369a1; }
+      .tool { padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font: inherit; }
+      #detail-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+      #street { left: 344px; right: 404px; top: auto; bottom: 12px; height: 52vh; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
+      #street[hidden] { display: none; }
+      #street-head { display: flex; justify-content: space-between; align-items: center; }
+      #street-head h2 { margin: 0; }
+      #street-viewer { position: relative; flex: 1; min-height: 0; border-radius: 4px; overflow: hidden; background: #020617; }
+      #street-msg { color: #94a3b8; font-size: 12px; }
+      .name-tag { pointer-events: none; }
+      .name-tag .maplibregl-popup-content { padding: 2px 8px; font-size: 12px; }
+      .maplibregl-popup-content { color: #0f172a; font: 13px/1.4 system-ui, sans-serif; }
+      .maplibregl-popup-content button { margin-top: 6px; padding: 2px 8px; border: 1px solid #0284c7; border-radius: 4px; background: #0284c7; color: #fff; cursor: pointer; font: inherit; }
       #back { padding: 2px 8px; background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font: inherit; }
       dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
       dt { color: #94a3b8; }
@@ -51,7 +80,8 @@
     </style>
   </head>
   <body>
-    <canvas id="view"></canvas>
+    <div id="map" class="off"></div>
+    <canvas id="view" class="off"></canvas>
     <div id="tooltip" role="tooltip" hidden></div>
     <div id="hud" class="panel">
       <div id="hud-head">
@@ -68,15 +98,28 @@
         <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0) ·
         <span data-i18n="credits.air">Air quality:</span>
         <a href="https://aqicn.org/" target="_blank" rel="noopener noreferrer">World Air Quality Index Project</a> ·
+        <span data-i18n="credits.basemap">Basemap:</span>
+        <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a>
+        <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">© OpenMapTiles</a> ·
+        <span data-i18n="credits.imagery">Satellite:</span>
+        <a href="https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9" target="_blank" rel="noopener noreferrer">Esri World Imagery</a> ·
+        <span data-i18n="credits.street">Street photos:</span>
+        <a href="https://www.mapillary.com/" target="_blank" rel="noopener noreferrer">Mapillary</a> (CC BY-SA) ·
         <span data-i18n="credits.buildings">Map data:</span>
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a> (ODbL)
       </div>
     </div>
-    <aside id="towns" class="panel" aria-labelledby="towns-title">
-      <fieldset id="township-switch" class="segmented">
-        <legend class="sr-only" data-i18n="towns.switch">Township</legend>
-      </fieldset>
-      <h2 id="towns-title" data-i18n="towns.title">Buildings (OSM)</h2>
+    <aside id="places" class="panel" aria-labelledby="places-title">
+      <h2 id="places-title" data-i18n="map.title">Townships in Vietnam (OSM)</h2>
+      <input id="places-q" type="search" autocomplete="off" data-i18n-label="map.search" data-i18n-placeholder="map.search" />
+      <div id="places-count" aria-live="polite"></div>
+      <ul id="places-list"></ul>
+    </aside>
+    <aside id="towns" class="panel" aria-labelledby="towns-name" hidden>
+      <button type="button" id="map-back" data-i18n="map.back">← Map</button>
+      <h2 id="towns-name">–</h2>
+      <div id="towns-place"></div>
+      <h3 data-i18n="towns.title">Buildings (OSM)</h3>
       <table>
         <thead>
           <tr>
@@ -94,6 +137,13 @@
       <button type="button" id="back" data-i18n="hud.back">← Township</button>
       <h2 id="detail-name">–</h2>
       <div id="detail-sub"><span id="detail-where"></span> · <a id="detail-osm" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></div>
+      <div id="detail-tools">
+        <fieldset id="detail-mode" class="segmented">
+          <legend class="sr-only" data-i18n="detail.mode">View</legend>
+          <button type="button" data-mode="facade" data-i18n="detail.modeFacade">Facade</button><button type="button" data-mode="sensors" data-i18n="detail.modeSensors">Sensors</button>
+        </fieldset>
+        <button type="button" id="detail-street" class="tool" data-i18n="street.open" hidden>Street view</button>
+      </div>
       <dl id="detail-facts"></dl>
       <h3 data-i18n="hud.instrumented">Instrumented floors</h3>
       <div id="floors">
@@ -110,6 +160,14 @@
       </div>
       <div id="detail-legend" data-i18n="detail.legend">Click a value to select the room. Underlined: AC on.</div>
     </aside>
+    <section id="street" class="panel" aria-labelledby="street-title" hidden>
+      <div id="street-head">
+        <h2 id="street-title" data-i18n="street.title">Street view (Mapillary)</h2>
+        <button type="button" id="street-close" class="tool" data-i18n="street.close">Close</button>
+      </div>
+      <div id="street-viewer"></div>
+      <div id="street-msg" aria-live="polite" hidden></div>
+    </section>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,15 +1,16 @@
-// One-off extract of townships from OpenStreetMap: tower footprints, surrounding buildings, roads,
-// green areas, water, sports pitches and parking. Writes data/townships/<id>.json.
-// Run: npm run fetch:township            (all townships)
-//      npm run fetch:township -- ocean-park   (one)
+// Extracts townships from OpenStreetMap: tower footprints, surrounding buildings, roads, green areas,
+// water, sports pitches and parking. Reads scripts/townships.seed.json (see discover-townships.mjs),
+// writes data/townships/<id>.json and rebuilds data/catalog.json.
+// Run: npm run fetch:township                 (every seed that has no file yet, one at a time, resumable)
+//      npm run fetch:township -- vn007 vn012  (just these)
+//      npm run fetch:township -- --force ...  (overwrite existing files)
 // Data: © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 
-// Seeds are the centre of each "Vinhomes ..." landuse polygon as returned by Nominatim
-const TOWNSHIPS = [
-  { id: "smart-city", name: "Vinhomes Smart City (Tay Mo, Hanoi)", shortName: "Smart City", prefix: "S", seed: { lat: 21.0023359, lon: 105.7377569 } },
-  { id: "ocean-park", name: "Vinhomes Ocean Park (Gia Lam, Hanoi)", shortName: "Ocean Park", prefix: "O", seed: { lat: 20.9942646, lon: 105.948475 } },
-];
+const SEEDS = JSON.parse(readFileSync(new URL("./townships.seed.json", import.meta.url), "utf8"));
+const TOWER_KINDS = new Set(["apartments", "residential", "yes", "dormitory", "hotel", "office", "commercial", "mixed_use"]);
+const MIN_TOWER_LEVELS = 10;
+const DEFAULT_PREFIX = "B";
 
 const BUILDING_RADIUS_M = 900;
 const GROUND_RADIUS_M = 700;
@@ -44,23 +45,30 @@ function areaKind(tags) {
 
 async function fetchElements({ lat, lon }) {
   const around = (r) => `(around:${r},${lat},${lon})`;
-  const query = `[out:json][timeout:90];(
+  const query = `[out:json][timeout:180];(
     way["building"]${around(BUILDING_RADIUS_M)};
     way["highway"]${around(GROUND_RADIUS_M)};
     way["leisure"~"^(park|garden|pitch|playground|sports_centre|swimming_pool|recreation_ground)$"]${around(GROUND_RADIUS_M)};
     way["natural"~"^(water|wood)$"]${around(GROUND_RADIUS_M)};
     way["landuse"~"^(grass|recreation_ground|forest|meadow)$"]${around(GROUND_RADIUS_M)};
     way["amenity"="parking"]${around(GROUND_RADIUS_M)};
-  );out tags geom;`;
+  );out tags geom;
+  is_in(${lat},${lon})->.a;area.a["boundary"="administrative"]["name"];out tags;`;
   // The public server is often busy: retry transient errors with a growing pause
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const res = await fetch(OVERPASS_URL, {
       method: "POST",
       headers: { "User-Agent": "digital-twin-lab/0.1 (learning project)", "Content-Type": "application/x-www-form-urlencoded" },
       body: "data=" + encodeURIComponent(query),
-      signal: AbortSignal.timeout(150000),
+      signal: AbortSignal.timeout(200000),
     });
-    if (res.ok) return (await res.json()).elements.filter((w) => Array.isArray(w.geometry) && w.geometry.length >= 2);
+    if (res.ok) {
+      const elements = (await res.json()).elements;
+      return {
+        ways: elements.filter((w) => Array.isArray(w.geometry) && w.geometry.length >= 2),
+        admin: elements.filter((e) => e.type === "area" && e.tags),
+      };
+    }
     if (!TRANSIENT_STATUS.has(res.status) || attempt === MAX_ATTEMPTS) throw new Error(`Overpass HTTP ${res.status}`);
     const pause = REQUEST_GAP_MS * attempt * 2;
     console.log(`Overpass HTTP ${res.status}, retrying in ${pause / 1000}s (attempt ${attempt}/${MAX_ATTEMPTS})`);
@@ -93,19 +101,57 @@ const levelsOf = (tags) => {
   return Number.isInteger(n) && n >= 1 && n <= 200 ? n : null;
 };
 
-function extract(township, elements) {
-  const { seed, prefix } = township;
+// Administrative names for the seed, from the OSM boundaries that contain it
+function adminNames(admin) {
+  const named = admin
+    .map((a) => ({ level: Number.parseInt(a.tags.admin_level, 10), name: a.tags["name:vi"] ?? a.tags.name }))
+    .filter((a) => Number.isInteger(a.level) && a.name)
+    .sort((a, b) => a.level - b.level);
+  const city = named.find((a) => a.level === 4)?.name ?? null;
+  const local = named.filter((a) => a.level > 4 && a.level <= 8).at(-1)?.name ?? null;
+  return { city, ward: local };
+}
+
+// Tower names usually share a brand plus a block code ("Masteri Waterfront H2", "Park 7"). The brand is
+// the most common name once trailing code-like words are dropped; if none is shared, no brand is guessed.
+const BLOCK_WORDS = /^(toà|tòa|block|tower|building|nhà|tháp|căn hộ|chung cư)$/i;
+function brandOf(names) {
+  const counts = new Map();
+  for (const name of names) {
+    const words = name.split(/\s+/);
+    while (words.length > 1 && (/\d/.test(words.at(-1)) || words.at(-1).length <= 2 || BLOCK_WORDS.test(words.at(-1)))) words.pop();
+    const brand = words.join(" ");
+    if (brand.length >= 6 && !BLOCK_WORDS.test(words[0])) counts.set(brand, (counts.get(brand) ?? 0) + 1);
+  }
+  const [top] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  return top && top[1] >= 2 ? top[0] : null;
+}
+
+// Names are generated: the brand shared by the towers, else the tower nearest the centre, then the place.
+// Seeds can carry a hand-written name (and shortName), which always wins.
+function namesFor(township, towerNames, ward, city) {
+  const lead = brandOf(towerNames) ?? towerNames[0];
+  const place = [ward, city].filter(Boolean).join(", ");
+  return {
+    name: township.name ?? (place ? `${lead} · ${place}` : lead),
+    shortName: township.shortName ?? lead,
+  };
+}
+
+function extract(township, { ways: elements, admin }) {
+  const seed = { lat: township.lat, lon: township.lon };
+  const prefix = township.prefix ?? DEFAULT_PREFIX;
   const buildings = elements.filter((w) => w.tags.building);
 
-  // Towers: named apartment blocks with a known number of levels, nearest to the seed first
+  // Towers: named high-rise blocks with a known number of levels, nearest to the seed first
   const towers = buildings
-    .filter((w) => w.tags.building === "apartments" && w.tags.name && (levelsOf(w.tags) ?? 0) >= 3)
+    .filter((w) => TOWER_KINDS.has(w.tags.building) && w.tags.name && (levelsOf(w.tags) ?? 0) >= MIN_TOWER_LEVELS)
     .map((w) => ({ way: w, pts: closedRing(w) }))
     .filter((c) => c.pts)
     .map((c) => ({ ...c, c: centroid(c.pts) }))
     .sort((a, b) => metersBetween(a.c, seed) - metersBetween(b.c, seed))
     .slice(0, MAX_TOWERS);
-  if (towers.length === 0) throw new Error(`${township.id}: no named apartment buildings found`);
+  if (towers.length === 0) throw new Error(`${township.id}: no named high-rise buildings found`);
 
   const origin = centroid(towers.map((c) => c.c));
   const project = (p) => [
@@ -153,10 +199,15 @@ function extract(township, elements) {
     .slice(0, MAX_AREAS)
     .map((a) => ({ kind: areaKind(a.way.tags), footprint: a.ring.map(project) }));
 
+  const { city: adminCity, ward } = adminNames(admin);
+  const city = township.city ?? adminCity;
+  const { name, shortName } = namesFor(township, towerOut.map((b) => b.name), ward, city);
   return {
     id: township.id,
-    name: township.name,
-    shortName: township.shortName,
+    name,
+    shortName,
+    city,
+    ward,
     source: "OpenStreetMap via Overpass API",
     license: "ODbL 1.0 - (c) OpenStreetMap contributors - https://www.openstreetmap.org/copyright",
     generated: new Date().toISOString().slice(0, 10),
@@ -168,16 +219,72 @@ function extract(township, elements) {
   };
 }
 
-const only = process.argv[2];
-const selected = TOWNSHIPS.filter((t) => !only || t.id === only);
-if (selected.length === 0) throw new Error(`Unknown township "${only}"`);
+const args = process.argv.slice(2);
+const force = args.includes("--force");
+const rename = args.includes("--rename"); // recompute names of the files on disk, no network
+const ids = args.filter((a) => !a.startsWith("--"));
+const dataDir = new URL("../data/townships/", import.meta.url);
+mkdirSync(dataDir, { recursive: true });
+const have = new Set(readdirSync(dataDir).map((f) => f.replace(/\.json$/, "")));
 
-mkdirSync(new URL("../data/townships/", import.meta.url), { recursive: true });
+if (rename) {
+  for (const file of readdirSync(dataDir).filter((f) => f.endsWith(".json"))) {
+    const url = new URL(file, dataDir);
+    const data = JSON.parse(readFileSync(url, "utf8"));
+    const seed = SEEDS.find((t) => t.id === data.id) ?? {};
+    const names = namesFor(seed, data.buildings.map((b) => b.name), data.ward ?? null, data.city ?? seed.city ?? null);
+    writeFileSync(url, JSON.stringify({ ...data, ...names }) + "\n");
+  }
+  console.log(`catalog: ${writeCatalog()} townships`);
+  process.exit(0);
+}
+
+for (const id of ids) if (!SEEDS.some((t) => t.id === id)) throw new Error(`Unknown township "${id}"`);
+const selected = SEEDS.filter((t) => (ids.length ? ids.includes(t.id) : true) && (force || !have.has(t.id)));
+console.log(`${selected.length} township(s) to extract (${have.size} already on disk)`);
+
+// The catalog is what the map loads up front: one small record per township, no geometry.
+// It is rewritten after every township, so it always matches the files on disk even if a run is stopped.
+function writeCatalog() {
+  const catalog = readdirSync(dataDir)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(readFileSync(new URL(f, dataDir), "utf8")))
+    .map((d) => {
+      const seed = SEEDS.find((s) => s.id === d.id);
+      return {
+        id: d.id,
+        name: d.name,
+        shortName: d.shortName,
+        city: d.city ?? seed?.city ?? null,
+        ward: d.ward ?? null,
+        lat: d.origin.lat,
+        lon: d.origin.lon,
+        towers: d.buildings.length,
+        tallest: Math.max(...d.buildings.map((b) => b.levels)),
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
+  writeFileSync(new URL("../data/catalog.json", import.meta.url), JSON.stringify(catalog) + "\n");
+  return catalog.length;
+}
+
+const failed = [];
 for (const [i, township] of selected.entries()) {
   if (i > 0) await new Promise((r) => setTimeout(r, REQUEST_GAP_MS)); // be gentle with the public Overpass server
-  const data = extract(township, await fetchElements(township.seed));
-  const json = JSON.stringify(data);
-  writeFileSync(new URL(`../data/townships/${township.id}.json`, import.meta.url), json + "\n");
-  console.log(`${township.id}: ${data.buildings.length} towers, ${data.context.length} context, ${data.roads.length} roads, ${data.areas.length} areas, ${Math.round(json.length / 1024)} KB`);
-  for (const b of data.buildings) console.log(`  ${b.id} ${b.name} levels=${b.levels} points=${b.footprint.length}`);
+  try {
+    const data = extract(township, await fetchElements({ lat: township.lat, lon: township.lon }));
+    const json = JSON.stringify(data);
+    writeFileSync(new URL(`${township.id}.json`, dataDir), json + "\n");
+    writeCatalog();
+    console.log(`[${i + 1}/${selected.length}] ${township.id} ${data.name}: ${data.buildings.length} towers, ${data.context.length} context, ${data.roads.length} roads, ${data.areas.length} areas, ${Math.round(json.length / 1024)} KB`);
+  } catch (err) {
+    failed.push(township.id);
+    console.log(`[${i + 1}/${selected.length}] ${township.id} FAILED: ${err.message}`);
+  }
+}
+
+console.log(`catalog: ${writeCatalog()} townships`);
+if (failed.length > 0) {
+  console.log(`failed: ${failed.join(" ")} (run again to retry them)`);
+  process.exitCode = 1;
 }

@@ -22,12 +22,21 @@ export function frameView(center: THREE.Vector3, radius: number): void {
   const distance = radius * 2.4;
   camera.position.copy(center).add(new THREE.Vector3(1, 0.8, 1).normalize().multiplyScalar(distance));
   controls.target.copy(center);
-  controls.maxDistance = distance * 3;
+  setZoomLimit(radius);
   controls.update();
 }
 
-function resize(): void {
+const MAX_DISTANCE_FACTOR = 3; // how far past the framing distance the user may zoom out
+
+// Only the zoom-out limit for a sphere of the given radius; the camera itself is left where the user put it
+export function setZoomLimit(radius: number): void {
+  controls.maxDistance = radius * 2.4 * MAX_DISTANCE_FACTOR;
+}
+
+// The canvas has no size while it is hidden, so this is also called when it is shown again
+export function resize(): void {
   const { clientWidth: w, clientHeight: h } = canvas;
+  if (w === 0 || h === 0) return; // hidden
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();

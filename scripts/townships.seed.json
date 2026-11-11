@@ -1,0 +1,983 @@
+[
+ {
+  "id": "vn001",
+  "lat": 21.00603,
+  "lon": 105.80276,
+  "towers": 45,
+  "tallest": 37
+ },
+ {
+  "id": "vn002",
+  "lat": 20.96428,
+  "lon": 105.82675,
+  "towers": 40,
+  "tallest": 41
+ },
+ {
+  "id": "vn003",
+  "lat": 21.03062,
+  "lon": 105.78237,
+  "towers": 37,
+  "tallest": 31
+ },
+ {
+  "id": "vn004",
+  "lat": 20.99819,
+  "lon": 105.80356,
+  "towers": 35,
+  "tallest": 35
+ },
+ {
+  "id": "ocean-park",
+  "name": "Vinhomes Ocean Park (Gia Lam, Hanoi)",
+  "shortName": "Ocean Park",
+  "prefix": "O",
+  "city": "Hà Nội",
+  "lat": 20.9942646,
+  "lon": 105.948475,
+  "towers": 33,
+  "tallest": 38
+ },
+ {
+  "id": "smart-city",
+  "name": "Vinhomes Smart City (Tay Mo, Hanoi)",
+  "shortName": "Smart City",
+  "prefix": "S",
+  "city": "Hà Nội",
+  "lat": 21.0023359,
+  "lon": 105.7377569,
+  "towers": 33,
+  "tallest": 39
+ },
+ {
+  "id": "vn005",
+  "lat": 10.73107,
+  "lon": 106.70585,
+  "towers": 32,
+  "tallest": 22
+ },
+ {
+  "id": "vn006",
+  "lat": 21.01525,
+  "lon": 105.78919,
+  "towers": 32,
+  "tallest": 37
+ },
+ {
+  "id": "vn007",
+  "lat": 20.99281,
+  "lon": 105.86744,
+  "towers": 31,
+  "tallest": 35
+ },
+ {
+  "id": "vn008",
+  "lat": 21.03263,
+  "lon": 105.76465,
+  "towers": 30,
+  "tallest": 30
+ },
+ {
+  "id": "vn009",
+  "lat": 10.73093,
+  "lon": 106.71636,
+  "towers": 28,
+  "tallest": 28
+ },
+ {
+  "id": "vn010",
+  "lat": 10.88394,
+  "lon": 106.78114,
+  "towers": 26,
+  "tallest": 25
+ },
+ {
+  "id": "vn011",
+  "lat": 21.05082,
+  "lon": 105.78066,
+  "towers": 21,
+  "tallest": 35
+ },
+ {
+  "id": "vn012",
+  "lat": 21.01288,
+  "lon": 105.85002,
+  "towers": 20,
+  "tallest": 22
+ },
+ {
+  "id": "vn013",
+  "lat": 10.84327,
+  "lon": 106.84115,
+  "towers": 19,
+  "tallest": 39
+ },
+ {
+  "id": "vn014",
+  "lat": 21.06482,
+  "lon": 105.79796,
+  "towers": 19,
+  "tallest": 35
+ },
+ {
+  "id": "vn015",
+  "lat": 10.79088,
+  "lon": 106.72065,
+  "towers": 17,
+  "tallest": 50
+ },
+ {
+  "id": "vn016",
+  "lat": 10.8016,
+  "lon": 106.74888,
+  "towers": 17,
+  "tallest": 42
+ },
+ {
+  "id": "vn017",
+  "lat": 10.7703,
+  "lon": 106.7022,
+  "towers": 16,
+  "tallest": 40
+ },
+ {
+  "id": "vn018",
+  "lat": 20.97403,
+  "lon": 105.76054,
+  "towers": 16,
+  "tallest": 50
+ },
+ {
+  "id": "vn019",
+  "lat": 10.78441,
+  "lon": 106.70298,
+  "towers": 15,
+  "tallest": 34
+ },
+ {
+  "id": "vn020",
+  "lat": 20.98492,
+  "lon": 105.8529,
+  "towers": 15,
+  "tallest": 30
+ },
+ {
+  "id": "vn021",
+  "lat": 20.98876,
+  "lon": 105.78684,
+  "towers": 15,
+  "tallest": 40
+ },
+ {
+  "id": "vn022",
+  "lat": 20.99794,
+  "lon": 105.73926,
+  "towers": 15,
+  "tallest": 39
+ },
+ {
+  "id": "vn023",
+  "lat": 21.08444,
+  "lon": 105.78874,
+  "towers": 15,
+  "tallest": 40
+ },
+ {
+  "id": "vn024",
+  "lat": 10.79062,
+  "lon": 106.7113,
+  "towers": 14,
+  "tallest": 50
+ },
+ {
+  "id": "vn025",
+  "lat": 21.0056,
+  "lon": 105.794,
+  "towers": 14,
+  "tallest": 45
+ },
+ {
+  "id": "vn026",
+  "lat": 21.06547,
+  "lon": 105.90834,
+  "towers": 14,
+  "tallest": 19
+ },
+ {
+  "id": "vn027",
+  "lat": 10.72207,
+  "lon": 106.7037,
+  "towers": 13,
+  "tallest": 33
+ },
+ {
+  "id": "vn028",
+  "lat": 20.97181,
+  "lon": 105.82576,
+  "towers": 13,
+  "tallest": 40
+ },
+ {
+  "id": "vn029",
+  "lat": 21.01727,
+  "lon": 105.79688,
+  "towers": 13,
+  "tallest": 25
+ },
+ {
+  "id": "vn030",
+  "lat": 21.01801,
+  "lon": 105.78158,
+  "towers": 13,
+  "tallest": 42
+ },
+ {
+  "id": "vn031",
+  "lat": 21.02455,
+  "lon": 105.81923,
+  "towers": 13,
+  "tallest": 27
+ },
+ {
+  "id": "vn032",
+  "lat": 21.04321,
+  "lon": 105.76712,
+  "towers": 13,
+  "tallest": 40
+ },
+ {
+  "id": "vn033",
+  "lat": 21.16616,
+  "lon": 106.05432,
+  "towers": 13,
+  "tallest": 29
+ },
+ {
+  "id": "vn034",
+  "lat": 10.77807,
+  "lon": 106.70603,
+  "towers": 12,
+  "tallest": 35
+ },
+ {
+  "id": "vn035",
+  "lat": 20.98466,
+  "lon": 105.8377,
+  "towers": 12,
+  "tallest": 29
+ },
+ {
+  "id": "vn036",
+  "lat": 21.02526,
+  "lon": 105.84339,
+  "towers": 11,
+  "tallest": 23
+ },
+ {
+  "id": "vn037",
+  "lat": 10.74351,
+  "lon": 106.70024,
+  "towers": 10,
+  "tallest": 36
+ },
+ {
+  "id": "vn038",
+  "lat": 10.81427,
+  "lon": 106.77792,
+  "towers": 10,
+  "tallest": 18
+ },
+ {
+  "id": "vn039",
+  "lat": 16.10008,
+  "lon": 108.12946,
+  "towers": 10,
+  "tallest": 21
+ },
+ {
+  "id": "vn040",
+  "lat": 20.96272,
+  "lon": 105.74741,
+  "towers": 10,
+  "tallest": 36
+ },
+ {
+  "id": "vn041",
+  "lat": 21.01805,
+  "lon": 105.81151,
+  "towers": 10,
+  "tallest": 31
+ },
+ {
+  "id": "vn042",
+  "lat": 21.0198,
+  "lon": 105.85623,
+  "towers": 10,
+  "tallest": 14
+ },
+ {
+  "id": "vn043",
+  "lat": 21.02344,
+  "lon": 105.78899,
+  "towers": 10,
+  "tallest": 45
+ },
+ {
+  "id": "vn044",
+  "lat": 10.81494,
+  "lon": 106.72952,
+  "towers": 9,
+  "tallest": 30
+ },
+ {
+  "id": "vn045",
+  "lat": 20.95032,
+  "lon": 105.85291,
+  "towers": 9,
+  "tallest": 32
+ },
+ {
+  "id": "vn046",
+  "lat": 20.96437,
+  "lon": 105.83251,
+  "towers": 9,
+  "tallest": 37
+ },
+ {
+  "id": "vn047",
+  "lat": 21.00189,
+  "lon": 105.81538,
+  "towers": 9,
+  "tallest": 40
+ },
+ {
+  "id": "vn048",
+  "lat": 21.03749,
+  "lon": 105.90783,
+  "towers": 9,
+  "tallest": 15
+ },
+ {
+  "id": "vn049",
+  "lat": 21.05036,
+  "lon": 105.79361,
+  "towers": 9,
+  "tallest": 25
+ },
+ {
+  "id": "vn050",
+  "lat": 10.34844,
+  "lon": 107.09669,
+  "towers": 8,
+  "tallest": 35
+ },
+ {
+  "id": "vn051",
+  "lat": 10.71418,
+  "lon": 106.66365,
+  "towers": 8,
+  "tallest": 20
+ },
+ {
+  "id": "vn052",
+  "lat": 10.77548,
+  "lon": 106.67824,
+  "towers": 8,
+  "tallest": 30
+ },
+ {
+  "id": "vn053",
+  "lat": 10.82991,
+  "lon": 106.61994,
+  "towers": 8,
+  "tallest": 20
+ },
+ {
+  "id": "vn054",
+  "lat": 12.2734,
+  "lon": 109.20175,
+  "towers": 8,
+  "tallest": 40
+ },
+ {
+  "id": "vn055",
+  "lat": 20.95311,
+  "lon": 105.9388,
+  "towers": 8,
+  "tallest": 36
+ },
+ {
+  "id": "vn056",
+  "lat": 20.95946,
+  "lon": 105.76753,
+  "towers": 8,
+  "tallest": 40
+ },
+ {
+  "id": "vn057",
+  "lat": 20.96264,
+  "lon": 105.79372,
+  "towers": 8,
+  "tallest": 34
+ },
+ {
+  "id": "vn058",
+  "lat": 20.97628,
+  "lon": 105.83665,
+  "towers": 8,
+  "tallest": 40
+ },
+ {
+  "id": "vn059",
+  "lat": 20.99788,
+  "lon": 105.87018,
+  "towers": 8,
+  "tallest": 31
+ },
+ {
+  "id": "vn060",
+  "lat": 21.00186,
+  "lon": 105.94447,
+  "towers": 8,
+  "tallest": 32
+ },
+ {
+  "id": "vn061",
+  "lat": 21.02843,
+  "lon": 105.81035,
+  "towers": 8,
+  "tallest": 30
+ },
+ {
+  "id": "vn062",
+  "lat": 10.70836,
+  "lon": 106.64271,
+  "towers": 7,
+  "tallest": 25
+ },
+ {
+  "id": "vn063",
+  "lat": 10.72896,
+  "lon": 106.72305,
+  "towers": 7,
+  "tallest": 25
+ },
+ {
+  "id": "vn064",
+  "lat": 10.75659,
+  "lon": 106.69177,
+  "towers": 7,
+  "tallest": 25
+ },
+ {
+  "id": "vn065",
+  "lat": 10.8034,
+  "lon": 106.61124,
+  "towers": 7,
+  "tallest": 17
+ },
+ {
+  "id": "vn066",
+  "lat": 12.23751,
+  "lon": 109.1958,
+  "towers": 7,
+  "tallest": 46
+ },
+ {
+  "id": "vn067",
+  "lat": 16.06854,
+  "lon": 108.24456,
+  "towers": 7,
+  "tallest": 50
+ },
+ {
+  "id": "vn068",
+  "lat": 20.96448,
+  "lon": 105.77494,
+  "towers": 7,
+  "tallest": 33
+ },
+ {
+  "id": "vn069",
+  "lat": 20.9852,
+  "lon": 105.85869,
+  "towers": 7,
+  "tallest": 27
+ },
+ {
+  "id": "vn070",
+  "lat": 10.73675,
+  "lon": 106.66855,
+  "towers": 6,
+  "tallest": 22
+ },
+ {
+  "id": "vn071",
+  "lat": 10.7809,
+  "lon": 106.6957,
+  "towers": 6,
+  "tallest": 22
+ },
+ {
+  "id": "vn072",
+  "lat": 10.87434,
+  "lon": 106.75064,
+  "towers": 6,
+  "tallest": 29
+ },
+ {
+  "id": "vn073",
+  "lat": 20.96288,
+  "lon": 105.92118,
+  "towers": 6,
+  "tallest": 41
+ },
+ {
+  "id": "vn074",
+  "lat": 20.98623,
+  "lon": 105.78096,
+  "towers": 6,
+  "tallest": 45
+ },
+ {
+  "id": "vn075",
+  "lat": 20.99136,
+  "lon": 105.75551,
+  "towers": 6,
+  "tallest": 36
+ },
+ {
+  "id": "vn076",
+  "lat": 20.99547,
+  "lon": 105.85506,
+  "towers": 6,
+  "tallest": 22
+ },
+ {
+  "id": "vn077",
+  "lat": 21.00836,
+  "lon": 105.83538,
+  "towers": 6,
+  "tallest": 28
+ },
+ {
+  "id": "vn078",
+  "lat": 21.01973,
+  "lon": 105.82373,
+  "towers": 6,
+  "tallest": 23
+ },
+ {
+  "id": "vn079",
+  "lat": 21.02895,
+  "lon": 105.85695,
+  "towers": 6,
+  "tallest": 25
+ },
+ {
+  "id": "vn080",
+  "lat": 21.02947,
+  "lon": 105.79517,
+  "towers": 6,
+  "tallest": 32
+ },
+ {
+  "id": "vn081",
+  "lat": 21.03104,
+  "lon": 105.78776,
+  "towers": 6,
+  "tallest": 29
+ },
+ {
+  "id": "vn082",
+  "lat": 21.04892,
+  "lon": 105.9174,
+  "towers": 6,
+  "tallest": 15
+ },
+ {
+  "id": "vn083",
+  "lat": 21.0745,
+  "lon": 105.70168,
+  "towers": 6,
+  "tallest": 25
+ },
+ {
+  "id": "vn084",
+  "lat": 21.08321,
+  "lon": 105.81205,
+  "towers": 6,
+  "tallest": 34
+ },
+ {
+  "id": "vn085",
+  "lat": 10.80154,
+  "lon": 106.66588,
+  "towers": 5,
+  "tallest": 23
+ },
+ {
+  "id": "vn086",
+  "lat": 10.80324,
+  "lon": 106.7415,
+  "towers": 5,
+  "tallest": 44
+ },
+ {
+  "id": "vn087",
+  "lat": 10.83724,
+  "lon": 106.75592,
+  "towers": 5,
+  "tallest": 15
+ },
+ {
+  "id": "vn088",
+  "lat": 10.83854,
+  "lon": 106.83354,
+  "towers": 5,
+  "tallest": 35
+ },
+ {
+  "id": "vn089",
+  "lat": 10.86618,
+  "lon": 106.66488,
+  "towers": 5,
+  "tallest": 18
+ },
+ {
+  "id": "vn090",
+  "lat": 10.87159,
+  "lon": 106.75725,
+  "towers": 5,
+  "tallest": 35
+ },
+ {
+  "id": "vn091",
+  "lat": 10.89174,
+  "lon": 106.79362,
+  "towers": 5,
+  "tallest": 29
+ },
+ {
+  "id": "vn092",
+  "lat": 16.06294,
+  "lon": 108.22262,
+  "towers": 5,
+  "tallest": 33
+ },
+ {
+  "id": "vn093",
+  "lat": 16.09024,
+  "lon": 108.23337,
+  "towers": 5,
+  "tallest": 12
+ },
+ {
+  "id": "vn094",
+  "lat": 20.95899,
+  "lon": 105.84758,
+  "towers": 5,
+  "tallest": 23
+ },
+ {
+  "id": "vn095",
+  "lat": 20.97312,
+  "lon": 105.81999,
+  "towers": 5,
+  "tallest": 45
+ },
+ {
+  "id": "vn096",
+  "lat": 20.97791,
+  "lon": 105.84414,
+  "towers": 5,
+  "tallest": 28
+ },
+ {
+  "id": "vn097",
+  "lat": 20.98367,
+  "lon": 105.80883,
+  "towers": 5,
+  "tallest": 35
+ },
+ {
+  "id": "vn098",
+  "lat": 20.99827,
+  "lon": 105.8077,
+  "towers": 5,
+  "tallest": 33
+ },
+ {
+  "id": "vn099",
+  "lat": 21.01153,
+  "lon": 105.81154,
+  "towers": 5,
+  "tallest": 31
+ },
+ {
+  "id": "vn100",
+  "lat": 21.01191,
+  "lon": 105.7358,
+  "towers": 5,
+  "tallest": 35
+ },
+ {
+  "id": "vn101",
+  "lat": 21.02622,
+  "lon": 105.77121,
+  "towers": 5,
+  "tallest": 24
+ },
+ {
+  "id": "vn102",
+  "lat": 21.02683,
+  "lon": 105.80324,
+  "towers": 5,
+  "tallest": 27
+ },
+ {
+  "id": "vn103",
+  "lat": 21.03461,
+  "lon": 105.77082,
+  "towers": 5,
+  "tallest": 42
+ },
+ {
+  "id": "vn104",
+  "lat": 21.03878,
+  "lon": 105.78637,
+  "towers": 5,
+  "tallest": 35
+ },
+ {
+  "id": "vn105",
+  "lat": 21.05705,
+  "lon": 105.77762,
+  "towers": 5,
+  "tallest": 33
+ },
+ {
+  "id": "vn106",
+  "lat": 21.05725,
+  "lon": 105.9123,
+  "towers": 5,
+  "tallest": 15
+ },
+ {
+  "id": "vn107",
+  "lat": 21.07849,
+  "lon": 105.87491,
+  "towers": 5,
+  "tallest": 39
+ },
+ {
+  "id": "vn108",
+  "lat": 21.07903,
+  "lon": 105.7924,
+  "towers": 5,
+  "tallest": 21
+ },
+ {
+  "id": "vn109",
+  "lat": 21.08591,
+  "lon": 105.78285,
+  "towers": 5,
+  "tallest": 17
+ },
+ {
+  "id": "vn110",
+  "lat": 10.35211,
+  "lon": 107.08911,
+  "towers": 4,
+  "tallest": 26
+ },
+ {
+  "id": "vn111",
+  "lat": 10.71285,
+  "lon": 106.65057,
+  "towers": 4,
+  "tallest": 22
+ },
+ {
+  "id": "vn112",
+  "lat": 10.7182,
+  "lon": 106.63736,
+  "towers": 4,
+  "tallest": 22
+ },
+ {
+  "id": "vn113",
+  "lat": 10.73089,
+  "lon": 106.68883,
+  "towers": 4,
+  "tallest": 15
+ },
+ {
+  "id": "vn114",
+  "lat": 10.73183,
+  "lon": 106.69732,
+  "towers": 4,
+  "tallest": 21
+ },
+ {
+  "id": "vn115",
+  "lat": 10.7619,
+  "lon": 106.69739,
+  "towers": 4,
+  "tallest": 32
+ },
+ {
+  "id": "vn116",
+  "lat": 10.7701,
+  "lon": 106.6943,
+  "towers": 4,
+  "tallest": 26
+ },
+ {
+  "id": "vn117",
+  "lat": 10.79747,
+  "lon": 106.78521,
+  "towers": 4,
+  "tallest": 12
+ },
+ {
+  "id": "vn118",
+  "lat": 10.802,
+  "lon": 106.6402,
+  "towers": 4,
+  "tallest": 18
+ },
+ {
+  "id": "vn119",
+  "lat": 10.84418,
+  "lon": 106.74087,
+  "towers": 4,
+  "tallest": 20
+ },
+ {
+  "id": "vn120",
+  "lat": 10.86543,
+  "lon": 106.76005,
+  "towers": 4,
+  "tallest": 35
+ },
+ {
+  "id": "vn121",
+  "lat": 10.88133,
+  "lon": 106.8096,
+  "towers": 4,
+  "tallest": 12
+ },
+ {
+  "id": "vn122",
+  "lat": 10.91362,
+  "lon": 106.74766,
+  "towers": 4,
+  "tallest": 37
+ },
+ {
+  "id": "vn123",
+  "lat": 13.75433,
+  "lon": 109.21566,
+  "towers": 4,
+  "tallest": 42
+ },
+ {
+  "id": "vn124",
+  "lat": 15.98293,
+  "lon": 108.26063,
+  "towers": 4,
+  "tallest": 25
+ },
+ {
+  "id": "vn125",
+  "lat": 16.07226,
+  "lon": 108.22332,
+  "towers": 4,
+  "tallest": 45
+ },
+ {
+  "id": "vn126",
+  "lat": 20.97537,
+  "lon": 105.86968,
+  "towers": 4,
+  "tallest": 33
+ },
+ {
+  "id": "vn127",
+  "lat": 20.97913,
+  "lon": 105.78502,
+  "towers": 4,
+  "tallest": 33
+ },
+ {
+  "id": "vn128",
+  "lat": 20.99682,
+  "lon": 105.86126,
+  "towers": 4,
+  "tallest": 26
+ },
+ {
+  "id": "vn129",
+  "lat": 21,
+  "lon": 105.83704,
+  "towers": 4,
+  "tallest": 21
+ },
+ {
+  "id": "vn130",
+  "lat": 21.01353,
+  "lon": 105.80385,
+  "towers": 4,
+  "tallest": 28
+ },
+ {
+  "id": "vn131",
+  "lat": 21.02862,
+  "lon": 105.82251,
+  "towers": 4,
+  "tallest": 27
+ },
+ {
+  "id": "vn132",
+  "lat": 21.04526,
+  "lon": 105.87649,
+  "towers": 4,
+  "tallest": 25
+ },
+ {
+  "id": "vn133",
+  "lat": 21.04541,
+  "lon": 105.90049,
+  "towers": 4,
+  "tallest": 15
+ },
+ {
+  "id": "vn134",
+  "lat": 21.05794,
+  "lon": 105.90646,
+  "towers": 4,
+  "tallest": 17
+ },
+ {
+  "id": "vn135",
+  "lat": 21.06382,
+  "lon": 105.82616,
+  "towers": 4,
+  "tallest": 24
+ },
+ {
+  "id": "vn136",
+  "lat": 21.17323,
+  "lon": 106.06488,
+  "towers": 4,
+  "tallest": 30
+ },
+ {
+  "id": "vn137",
+  "lat": 21.17349,
+  "lon": 106.05608,
+  "towers": 4,
+  "tallest": 18
+ }
+]

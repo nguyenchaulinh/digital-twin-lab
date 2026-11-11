@@ -1,5 +1,8 @@
-// Every data/townships/*.json is loaded at build time. Coordinates are [east, north] in metres from
+// The catalog (one small record per township) is loaded up front for the map; the geometry of a township
+// is a separate file that is loaded only when it is opened. Coordinates are [east, north] in metres from
 // each file's `origin`. Data: © OpenStreetMap contributors (ODbL).
+import catalogJson from "../data/catalog.json";
+
 export interface TownshipBuilding {
   id: string;
   osmId: number;
@@ -31,19 +34,38 @@ export interface TownshipData {
   id: string;
   name: string;
   shortName: string;
+  city: string | null;
+  ward: string | null;
+  origin: { lat: number; lon: number };
   buildings: TownshipBuilding[];
   context: ContextBuilding[];
   roads: RoadSegment[];
   areas: AreaPolygon[];
 }
 
-const modules = import.meta.glob<TownshipData>("../data/townships/*.json", { eager: true, import: "default" });
+export interface CatalogEntry {
+  id: string;
+  name: string;
+  shortName: string;
+  city: string | null;
+  ward: string | null;
+  lat: number;
+  lon: number;
+  towers: number;
+  tallest: number;
+}
 
-export const townships: TownshipData[] = Object.values(modules).sort((a, b) => a.id.localeCompare(b.id));
-export const buildingIds: ReadonlySet<string> = new Set(townships.flatMap((t) => t.buildings.map((b) => b.id)));
+export const catalog: CatalogEntry[] = catalogJson;
 
-export function townshipOf(buildingId: string): TownshipData | undefined {
-  return townships.find((t) => t.buildings.some((b) => b.id === buildingId));
+const loaders = import.meta.glob<TownshipData>("../data/townships/*.json", { import: "default" });
+
+// Geometry of one township, fetched on demand (Vite makes each file its own chunk)
+export async function loadTownship(id: string): Promise<TownshipData> {
+  const load = loaders[`../data/townships/${id}.json`];
+  if (!load) throw new Error(`Unknown township "${id}"`);
+  const data = await load();
+  // The files written before the catalog existed have no city; the catalog does
+  return { ...data, city: data.city ?? catalog.find((e) => e.id === id)?.city ?? null, ward: data.ward ?? null };
 }
 
 // Heights are assumed: 3 m per level

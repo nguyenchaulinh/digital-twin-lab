@@ -3,8 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 
 const MAX_INSTRUMENTED_FLOORS = 12;
 const BUILDING_ID = /^[A-Z]\d{1,2}$/;
-const TOWNSHIP_ID = /^[a-z][a-z-]{0,30}$/;
-const FILE_NAME = /^[a-z][a-z-]{0,30}\.json$/;
+const TOWNSHIP_ID = /^[a-z][a-z0-9-]{0,30}$/;
+const FILE_NAME = /^[a-z][a-z0-9-]{0,30}\.json$/;
 const MAX_BUILDINGS_PER_TOWNSHIP = 50;
 const MAX_LEVELS = 200;
 
@@ -32,17 +32,17 @@ export function parseTownship(raw) {
     if (!Number.isInteger(b.levels) || b.levels < 1 || b.levels > MAX_LEVELS) throw new Error("invalid township: levels");
     return { id: b.id, name: String(b.name ?? b.id).slice(0, 60), levels: b.levels };
   });
-  return { id: raw.id, name: String(raw.name ?? raw.id).slice(0, 80), buildings };
+  const { lat, lon } = raw.origin ?? {};
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error("invalid township: origin");
+  return { id: raw.id, name: String(raw.name ?? raw.id).slice(0, 80), origin: { lat, lon }, buildings };
 }
 
-// Loads every data/townships/*.json; building ids must be unique across all of them
+// Loads every data/townships/*.json. Building ids only have to be unique inside their own township:
+// the simulator and the viewer always deal with one township at a time.
 export function loadTownships(dirUrl) {
   const files = readdirSync(dirUrl).filter((f) => FILE_NAME.test(f)).sort();
   if (files.length === 0) throw new Error("invalid township: no data files");
   const townships = files.map((f) => parseTownship(JSON.parse(readFileSync(new URL(f, dirUrl), "utf8"))));
-  const ids = townships.flatMap((t) => t.buildings.map((b) => b.id));
-  if (new Set(ids).size !== ids.length || new Set(townships.map((t) => t.id)).size !== townships.length) {
-    throw new Error("invalid township: duplicate id");
-  }
+  if (new Set(townships.map((t) => t.id)).size !== townships.length) throw new Error("invalid township: duplicate id");
   return townships;
 }

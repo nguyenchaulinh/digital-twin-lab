@@ -1,3 +1,4 @@
+import type { BuildingMode } from "./building-view";
 import { fmt } from "./i18n";
 import type { RoomState } from "./types";
 
@@ -41,6 +42,7 @@ const tableBody = byId("blist-body");
 const floorBody = byId("floor-body");
 const townsPanel = byId("towns");
 const detailPanel = byId("detail");
+const placesPanel = byId("places");
 
 function fillList(list: HTMLElement, rows: Row[]): void {
   list.replaceChildren();
@@ -64,10 +66,47 @@ export function onBack(handler: () => void): void {
   backButton.addEventListener("click", handler);
 }
 
-// --- Right panels: the township list, or the detail of the open building ---
-export function showDetail(visible: boolean): void {
-  detailPanel.hidden = !visible;
-  townsPanel.hidden = visible;
+// --- Right panels: the list of townships (map), the buildings of one township, or the detail of one building ---
+export type Panel = "places" | "towns" | "detail";
+
+export function showPanel(panel: Panel): void {
+  placesPanel.hidden = panel !== "places";
+  townsPanel.hidden = panel !== "towns";
+  detailPanel.hidden = panel !== "detail";
+}
+
+// A hidden (display: none) panel loses its scroll position, so the township list's is kept by hand
+export const getTownsScroll = (): number => townsPanel.scrollTop;
+export function setTownsScroll(top: number): void {
+  townsPanel.scrollTop = top;
+}
+
+export function setTownshipTitle(name: string, place: string): void {
+  byId("towns-name").textContent = name;
+  byId("towns-place").textContent = place;
+}
+
+export function onMapBack(handler: () => void): void {
+  byId("map-back").addEventListener("click", handler);
+}
+
+// The building view's look (facade or sensors) and its street view button
+const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("#detail-mode button[data-mode]"));
+
+export function onDetailMode(handler: (mode: BuildingMode) => void): void {
+  for (const button of modeButtons) {
+    button.addEventListener("click", () => handler(button.dataset.mode === "sensors" ? "sensors" : "facade"));
+  }
+}
+
+export function setDetailMode(mode: BuildingMode): void {
+  for (const button of modeButtons) button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+}
+
+export function onDetailStreet(handler: () => void, available: boolean): void {
+  const button = byId<HTMLButtonElement>("detail-street");
+  button.hidden = !available;
+  button.addEventListener("click", handler);
 }
 
 export function setDetail(detail: DetailInfo): void {
@@ -79,22 +118,47 @@ export function setDetail(detail: DetailInfo): void {
   fillList(byId("detail-facts"), detail.facts);
 }
 
-// --- Township switch ---
-export function createTownshipSwitch(
-  items: Array<{ id: string; label: string }>,
-  onSelect: (id: string) => void,
-): (activeId: string) => void {
-  const container = byId("township-switch");
-  const buttons = items.map((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = item.label;
-    button.addEventListener("click", () => onSelect(item.id));
-    container.append(button);
-    return { id: item.id, button };
-  });
-  return (activeId) => {
-    for (const { id, button } of buttons) button.setAttribute("aria-pressed", String(id === activeId));
+// --- Township list next to the map: search by name, city or ward (diacritics ignored) ---
+const plain = (text: string): string => text.normalize("NFD").replaceAll(/[\u0300-\u036f]/g, "").replaceAll("đ", "d").replaceAll("Đ", "D").toLowerCase();
+
+export interface PlaceRow {
+  id: string;
+  name: string;
+  secondary: string;
+  search: string; // extra text the search also matches, e.g. the city
+}
+
+export function createPlacesList(onPick: (id: string) => void): (rows: PlaceRow[]) => void {
+  const list = byId("places-list");
+  const query = byId<HTMLInputElement>("places-q");
+  const count = byId("places-count");
+  let rows: PlaceRow[] = [];
+
+  function render(): void {
+    const needle = plain(query.value.trim());
+    const shown = rows.filter((r) => needle === "" || plain(`${r.name} ${r.search}`).includes(needle));
+    list.replaceChildren();
+    for (const row of shown) {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "placebtn";
+      const name = document.createElement("span");
+      name.textContent = row.name;
+      const secondary = document.createElement("small");
+      secondary.textContent = row.secondary;
+      button.append(name, secondary);
+      button.addEventListener("click", () => onPick(row.id));
+      li.append(button);
+      list.append(li);
+    }
+    count.textContent = `${shown.length} / ${rows.length}`;
+  }
+
+  query.addEventListener("input", render);
+  return (next) => {
+    rows = next;
+    render();
   };
 }
 

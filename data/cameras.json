@@ -1,0 +1,1192 @@
+{
+ "source": "OpenStreetMap",
+ "license": "ODbL-1.0, © OpenStreetMap contributors",
+ "generated": "2026-11-11",
+ "cameras": [
+  {
+   "id": "n1000087560",
+   "osmType": "node",
+   "osmId": 1000087560,
+   "lat": 21.026905,
+   "lon": 105.83619,
+   "kind": "public"
+  },
+  {
+   "id": "n1043858560",
+   "osmType": "node",
+   "osmId": 1043858560,
+   "lat": 10.030403,
+   "lon": 105.786582,
+   "kind": "public"
+  },
+  {
+   "id": "n11308708357",
+   "osmType": "node",
+   "osmId": 11308708357,
+   "lat": 10.966735,
+   "lon": 106.853719,
+   "kind": "traffic"
+  },
+  {
+   "id": "n11378989804",
+   "osmType": "node",
+   "osmId": 11378989804,
+   "lat": 10.95609,
+   "lon": 106.812939,
+   "kind": "speed",
+   "maxspeed": 60
+  },
+  {
+   "id": "n11378989805",
+   "osmType": "node",
+   "osmId": 11378989805,
+   "lat": 10.956218,
+   "lon": 106.812704,
+   "kind": "speed",
+   "maxspeed": 60
+  },
+  {
+   "id": "n11455085109",
+   "osmType": "node",
+   "osmId": 11455085109,
+   "lat": 11.196506,
+   "lon": 106.723108,
+   "kind": "traffic"
+  },
+  {
+   "id": "n11704178322",
+   "osmType": "node",
+   "osmId": 11704178322,
+   "lat": 10.959795,
+   "lon": 106.688148,
+   "kind": "public",
+   "direction": "240"
+  },
+  {
+   "id": "n11837762894",
+   "osmType": "node",
+   "osmId": 11837762894,
+   "lat": 11.866259,
+   "lon": 109.084957,
+   "kind": "speed",
+   "ref": "CCTV001km55",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762895",
+   "osmType": "node",
+   "osmId": 11837762895,
+   "lat": 11.857534,
+   "lon": 109.087105,
+   "kind": "speed",
+   "ref": "CCTV002km56",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762896",
+   "osmType": "node",
+   "osmId": 11837762896,
+   "lat": 11.839775,
+   "lon": 109.086062,
+   "kind": "speed",
+   "ref": "CCTV003km58",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762897",
+   "osmType": "node",
+   "osmId": 11837762897,
+   "lat": 11.823177,
+   "lon": 109.078968,
+   "kind": "speed",
+   "ref": "CCTV004km60",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762898",
+   "osmType": "node",
+   "osmId": 11837762898,
+   "lat": 11.805445,
+   "lon": 109.072222,
+   "kind": "speed",
+   "ref": "CCTV005km62",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762899",
+   "osmType": "node",
+   "osmId": 11837762899,
+   "lat": 11.788707,
+   "lon": 109.069152,
+   "kind": "speed",
+   "ref": "CCTV006km64",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762900",
+   "osmType": "node",
+   "osmId": 11837762900,
+   "lat": 11.788681,
+   "lon": 109.069275,
+   "kind": "speed",
+   "ref": "CCTV006km64",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762901",
+   "osmType": "node",
+   "osmId": 11837762901,
+   "lat": 11.805415,
+   "lon": 109.072387,
+   "kind": "speed",
+   "ref": "CCTV005km62",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762902",
+   "osmType": "node",
+   "osmId": 11837762902,
+   "lat": 11.823099,
+   "lon": 109.079111,
+   "kind": "speed",
+   "ref": "CCTV004km60",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762903",
+   "osmType": "node",
+   "osmId": 11837762903,
+   "lat": 11.839727,
+   "lon": 109.086214,
+   "kind": "speed",
+   "ref": "CCTV003km58",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762904",
+   "osmType": "node",
+   "osmId": 11837762904,
+   "lat": 11.857554,
+   "lon": 109.087243,
+   "kind": "speed",
+   "ref": "CCTV002km56",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762905",
+   "osmType": "node",
+   "osmId": 11837762905,
+   "lat": 11.866267,
+   "lon": 109.08511,
+   "kind": "speed",
+   "ref": "CCTV001km55",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762906",
+   "osmType": "node",
+   "osmId": 11837762906,
+   "lat": 11.771456,
+   "lon": 109.06424,
+   "kind": "speed",
+   "ref": "CCTV007km66",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762907",
+   "osmType": "node",
+   "osmId": 11837762907,
+   "lat": 11.771389,
+   "lon": 109.064358,
+   "kind": "speed",
+   "ref": "CCTV007km66",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762908",
+   "osmType": "node",
+   "osmId": 11837762908,
+   "lat": 11.763527,
+   "lon": 109.059965,
+   "kind": "speed",
+   "ref": "CCTV008km67",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762909",
+   "osmType": "node",
+   "osmId": 11837762909,
+   "lat": 11.763463,
+   "lon": 109.060103,
+   "kind": "speed",
+   "ref": "CCTV008km67",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762910",
+   "osmType": "node",
+   "osmId": 11837762910,
+   "lat": 11.758825,
+   "lon": 109.057265,
+   "kind": "speed",
+   "ref": "CCTV009km67+6",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762911",
+   "osmType": "node",
+   "osmId": 11837762911,
+   "lat": 11.758753,
+   "lon": 109.057406,
+   "kind": "speed",
+   "ref": "CCTV009km67+6",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762912",
+   "osmType": "node",
+   "osmId": 11837762912,
+   "lat": 11.732225,
+   "lon": 109.041858,
+   "kind": "speed",
+   "ref": "CCTV010km71",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762913",
+   "osmType": "node",
+   "osmId": 11837762913,
+   "lat": 11.732214,
+   "lon": 109.041851,
+   "kind": "speed",
+   "ref": "CCTV011km71",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762914",
+   "osmType": "node",
+   "osmId": 11837762914,
+   "lat": 11.732157,
+   "lon": 109.041979,
+   "kind": "speed",
+   "ref": "CCTV010km71",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762915",
+   "osmType": "node",
+   "osmId": 11837762915,
+   "lat": 11.732144,
+   "lon": 109.04197,
+   "kind": "speed",
+   "ref": "CCTV011km71",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762916",
+   "osmType": "node",
+   "osmId": 11837762916,
+   "lat": 11.716679,
+   "lon": 109.032619,
+   "kind": "speed",
+   "ref": "CCTV012km73",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762917",
+   "osmType": "node",
+   "osmId": 11837762917,
+   "lat": 11.716612,
+   "lon": 109.032747,
+   "kind": "speed",
+   "ref": "CCTV012km73",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762918",
+   "osmType": "node",
+   "osmId": 11837762918,
+   "lat": 11.704481,
+   "lon": 109.019706,
+   "kind": "speed",
+   "ref": "CCTV013km75",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762919",
+   "osmType": "node",
+   "osmId": 11837762919,
+   "lat": 11.704362,
+   "lon": 109.019763,
+   "kind": "speed",
+   "ref": "CCTV013km75",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762920",
+   "osmType": "node",
+   "osmId": 11837762920,
+   "lat": 11.701541,
+   "lon": 109.005376,
+   "kind": "speed",
+   "ref": "CCTV014km76+7",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11837762921",
+   "osmType": "node",
+   "osmId": 11837762921,
+   "lat": 11.701422,
+   "lon": 109.005388,
+   "kind": "speed",
+   "ref": "CCTV014km76+7",
+   "maxspeed": 90
+  },
+  {
+   "id": "n11890773916",
+   "osmType": "node",
+   "osmId": 11890773916,
+   "lat": 20.781961,
+   "lon": 105.902144,
+   "kind": "traffic"
+  },
+  {
+   "id": "n12216026888",
+   "osmType": "node",
+   "osmId": 12216026888,
+   "lat": 10.377723,
+   "lon": 107.060961,
+   "kind": "public",
+   "direction": "20"
+  },
+  {
+   "id": "n12216026889",
+   "osmType": "node",
+   "osmId": 12216026889,
+   "lat": 10.364188,
+   "lon": 107.067558,
+   "kind": "public",
+   "direction": "330"
+  },
+  {
+   "id": "n12567216003",
+   "osmType": "node",
+   "osmId": 12567216003,
+   "lat": 15.870965,
+   "lon": 108.330936,
+   "kind": "public"
+  },
+  {
+   "id": "n12567271102",
+   "osmType": "node",
+   "osmId": 12567271102,
+   "lat": 15.871033,
+   "lon": 108.331025,
+   "kind": "public"
+  },
+  {
+   "id": "n12690290184",
+   "osmType": "node",
+   "osmId": 12690290184,
+   "lat": 21.052762,
+   "lon": 106.997768,
+   "kind": "traffic",
+   "direction": "20"
+  },
+  {
+   "id": "n13003608885",
+   "osmType": "node",
+   "osmId": 13003608885,
+   "lat": 12.678423,
+   "lon": 108.044199,
+   "kind": "red_light",
+   "maxspeed": 50,
+   "direction": "185"
+  },
+  {
+   "id": "n13136664405",
+   "osmType": "node",
+   "osmId": 13136664405,
+   "lat": 20.99285,
+   "lon": 106.066877,
+   "kind": "traffic"
+  },
+  {
+   "id": "n13140235719",
+   "osmType": "node",
+   "osmId": 13140235719,
+   "lat": 20.990731,
+   "lon": 106.084066,
+   "kind": "traffic"
+  },
+  {
+   "id": "n13144918762",
+   "osmType": "node",
+   "osmId": 13144918762,
+   "lat": 20.984962,
+   "lon": 106.098381,
+   "kind": "traffic"
+  },
+  {
+   "id": "n13183395604",
+   "osmType": "node",
+   "osmId": 13183395604,
+   "lat": 20.996495,
+   "lon": 106.057274,
+   "kind": "public"
+  },
+  {
+   "id": "n13275951997",
+   "osmType": "node",
+   "osmId": 13275951997,
+   "lat": 20.985662,
+   "lon": 106.044954,
+   "kind": "traffic"
+  },
+  {
+   "id": "n13354673787",
+   "osmType": "node",
+   "osmId": 13354673787,
+   "lat": 12.659793,
+   "lon": 108.03045,
+   "kind": "speed",
+   "maxspeed": 50,
+   "direction": "235"
+  },
+  {
+   "id": "n13354687534",
+   "osmType": "node",
+   "osmId": 13354687534,
+   "lat": 12.711969,
+   "lon": 108.069694,
+   "kind": "speed",
+   "maxspeed": 50,
+   "direction": "45"
+  },
+  {
+   "id": "n13354697243",
+   "osmType": "node",
+   "osmId": 13354697243,
+   "lat": 12.682413,
+   "lon": 108.045093,
+   "kind": "red_light",
+   "direction": "270"
+  },
+  {
+   "id": "n13536679712",
+   "osmType": "node",
+   "osmId": 13536679712,
+   "lat": 20.915504,
+   "lon": 105.950792,
+   "kind": "speed",
+   "direction": "330"
+  },
+  {
+   "id": "n13536679714",
+   "osmType": "node",
+   "osmId": 13536679714,
+   "lat": 20.916043,
+   "lon": 105.950831,
+   "kind": "speed",
+   "direction": "5"
+  },
+  {
+   "id": "n13536709045",
+   "osmType": "node",
+   "osmId": 13536709045,
+   "lat": 20.943416,
+   "lon": 106.000787,
+   "kind": "speed",
+   "direction": "270"
+  },
+  {
+   "id": "n13536709046",
+   "osmType": "node",
+   "osmId": 13536709046,
+   "lat": 20.943412,
+   "lon": 106.000789,
+   "kind": "speed",
+   "direction": "195"
+  },
+  {
+   "id": "n13597253330",
+   "osmType": "node",
+   "osmId": 13597253330,
+   "lat": 21.152052,
+   "lon": 106.230783,
+   "kind": "speed",
+   "direction": "15"
+  },
+  {
+   "id": "n13597253331",
+   "osmType": "node",
+   "osmId": 13597253331,
+   "lat": 21.152052,
+   "lon": 106.230785,
+   "kind": "speed",
+   "direction": "50"
+  },
+  {
+   "id": "n13597253332",
+   "osmType": "node",
+   "osmId": 13597253332,
+   "lat": 21.152051,
+   "lon": 106.230784,
+   "kind": "speed",
+   "direction": "175"
+  },
+  {
+   "id": "n13622013243",
+   "osmType": "node",
+   "osmId": 13622013243,
+   "lat": 20.944515,
+   "lon": 105.991439,
+   "kind": "speed",
+   "direction": "350"
+  },
+  {
+   "id": "n13622013244",
+   "osmType": "node",
+   "osmId": 13622013244,
+   "lat": 20.944514,
+   "lon": 105.991439,
+   "kind": "speed",
+   "direction": "155"
+  },
+  {
+   "id": "n13622013245",
+   "osmType": "node",
+   "osmId": 13622013245,
+   "lat": 20.944518,
+   "lon": 105.99144,
+   "kind": "speed",
+   "direction": "25"
+  },
+  {
+   "id": "n13994525135",
+   "osmType": "node",
+   "osmId": 13994525135,
+   "lat": 11.805709,
+   "lon": 109.07245,
+   "kind": "speed",
+   "maxspeed": 90
+  },
+  {
+   "id": "n13994525136",
+   "osmType": "node",
+   "osmId": 13994525136,
+   "lat": 11.80497,
+   "lon": 109.072284,
+   "kind": "speed",
+   "maxspeed": 90
+  },
+  {
+   "id": "n13995843722",
+   "osmType": "node",
+   "osmId": 13995843722,
+   "lat": 21.066467,
+   "lon": 105.906316,
+   "kind": "speed"
+  },
+  {
+   "id": "n14064450116",
+   "osmType": "node",
+   "osmId": 14064450116,
+   "lat": 10.80621,
+   "lon": 106.629111,
+   "kind": "traffic",
+   "name": "School",
+   "direction": "45"
+  },
+  {
+   "id": "n14064450117",
+   "osmType": "node",
+   "osmId": 14064450117,
+   "lat": 10.807194,
+   "lon": 106.662461,
+   "kind": "public",
+   "name": "An Ninh",
+   "direction": "78"
+  },
+  {
+   "id": "n14230993478",
+   "osmType": "node",
+   "osmId": 14230993478,
+   "lat": 20.992304,
+   "lon": 105.841018,
+   "kind": "traffic"
+  },
+  {
+   "id": "n14230993479",
+   "osmType": "node",
+   "osmId": 14230993479,
+   "lat": 20.980552,
+   "lon": 105.841157,
+   "kind": "traffic"
+  },
+  {
+   "id": "n14230993480",
+   "osmType": "node",
+   "osmId": 14230993480,
+   "lat": 20.970011,
+   "lon": 105.841232,
+   "kind": "traffic"
+  },
+  {
+   "id": "n14230993481",
+   "osmType": "node",
+   "osmId": 14230993481,
+   "lat": 20.996052,
+   "lon": 105.862091,
+   "kind": "traffic"
+  },
+  {
+   "id": "n14324844803",
+   "osmType": "node",
+   "osmId": 14324844803,
+   "lat": 11.040623,
+   "lon": 106.72259,
+   "kind": "traffic"
+  },
+  {
+   "id": "n2173349016",
+   "osmType": "node",
+   "osmId": 2173349016,
+   "lat": 21.041638,
+   "lon": 105.835972,
+   "kind": "public"
+  },
+  {
+   "id": "n2562422145",
+   "osmType": "node",
+   "osmId": 2562422145,
+   "lat": 20.724718,
+   "lon": 107.049459,
+   "kind": "public"
+  },
+  {
+   "id": "n2562454016",
+   "osmType": "node",
+   "osmId": 2562454016,
+   "lat": 20.254219,
+   "lon": 105.972931,
+   "kind": "public"
+  },
+  {
+   "id": "n2562454017",
+   "osmType": "node",
+   "osmId": 2562454017,
+   "lat": 20.256887,
+   "lon": 105.971966,
+   "kind": "public"
+  },
+  {
+   "id": "n2587491496",
+   "osmType": "node",
+   "osmId": 2587491496,
+   "lat": 21.010788,
+   "lon": 105.849046,
+   "kind": "public"
+  },
+  {
+   "id": "n2587491498",
+   "osmType": "node",
+   "osmId": 2587491498,
+   "lat": 21.024201,
+   "lon": 105.841609,
+   "kind": "public"
+  },
+  {
+   "id": "n2587491499",
+   "osmType": "node",
+   "osmId": 2587491499,
+   "lat": 21.025863,
+   "lon": 105.851779,
+   "kind": "public"
+  },
+  {
+   "id": "n2587491500",
+   "osmType": "node",
+   "osmId": 2587491500,
+   "lat": 21.027859,
+   "lon": 105.853628,
+   "kind": "public"
+  },
+  {
+   "id": "n2587491501",
+   "osmType": "node",
+   "osmId": 2587491501,
+   "lat": 21.028789,
+   "lon": 105.853767,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513879",
+   "osmType": "node",
+   "osmId": 2587513879,
+   "lat": 21.031066,
+   "lon": 105.838653,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513882",
+   "osmType": "node",
+   "osmId": 2587513882,
+   "lat": 21.033366,
+   "lon": 105.8388,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513883",
+   "osmType": "node",
+   "osmId": 2587513883,
+   "lat": 21.034675,
+   "lon": 105.852196,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513884",
+   "osmType": "node",
+   "osmId": 2587513884,
+   "lat": 21.034795,
+   "lon": 105.836987,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513885",
+   "osmType": "node",
+   "osmId": 2587513885,
+   "lat": 21.03557,
+   "lon": 105.836469,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513886",
+   "osmType": "node",
+   "osmId": 2587513886,
+   "lat": 21.035687,
+   "lon": 105.835183,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513887",
+   "osmType": "node",
+   "osmId": 2587513887,
+   "lat": 21.036135,
+   "lon": 105.83664,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513888",
+   "osmType": "node",
+   "osmId": 2587513888,
+   "lat": 21.036639,
+   "lon": 105.836745,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513891",
+   "osmType": "node",
+   "osmId": 2587513891,
+   "lat": 21.037762,
+   "lon": 105.831058,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513892",
+   "osmType": "node",
+   "osmId": 2587513892,
+   "lat": 21.03823,
+   "lon": 105.835403,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513893",
+   "osmType": "node",
+   "osmId": 2587513893,
+   "lat": 21.039176,
+   "lon": 105.835851,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513894",
+   "osmType": "node",
+   "osmId": 2587513894,
+   "lat": 21.039245,
+   "lon": 105.835556,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513895",
+   "osmType": "node",
+   "osmId": 2587513895,
+   "lat": 21.040672,
+   "lon": 105.84195,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513897",
+   "osmType": "node",
+   "osmId": 2587513897,
+   "lat": 21.041513,
+   "lon": 105.836439,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513899",
+   "osmType": "node",
+   "osmId": 2587513899,
+   "lat": 21.041724,
+   "lon": 105.836462,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513900",
+   "osmType": "node",
+   "osmId": 2587513900,
+   "lat": 21.041928,
+   "lon": 105.835039,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513903",
+   "osmType": "node",
+   "osmId": 2587513903,
+   "lat": 21.042707,
+   "lon": 105.835054,
+   "kind": "public"
+  },
+  {
+   "id": "n2587513904",
+   "osmType": "node",
+   "osmId": 2587513904,
+   "lat": 21.042748,
+   "lon": 105.835702,
+   "kind": "public"
+  },
+  {
+   "id": "n2587514014",
+   "osmType": "node",
+   "osmId": 2587514014,
+   "lat": 21.045079,
+   "lon": 105.840562,
+   "kind": "public"
+  },
+  {
+   "id": "n2587514015",
+   "osmType": "node",
+   "osmId": 2587514015,
+   "lat": 21.045213,
+   "lon": 105.840374,
+   "kind": "public"
+  },
+  {
+   "id": "n2587514086",
+   "osmType": "node",
+   "osmId": 2587514086,
+   "lat": 21.041088,
+   "lon": 105.835826,
+   "kind": "public"
+  },
+  {
+   "id": "n2596351313",
+   "osmType": "node",
+   "osmId": 2596351313,
+   "lat": 10.006061,
+   "lon": 105.085837,
+   "kind": "public"
+  },
+  {
+   "id": "n2596351325",
+   "osmType": "node",
+   "osmId": 2596351325,
+   "lat": 10.010287,
+   "lon": 105.076894,
+   "kind": "public"
+  },
+  {
+   "id": "n2596351336",
+   "osmType": "node",
+   "osmId": 2596351336,
+   "lat": 10.011392,
+   "lon": 105.079522,
+   "kind": "public"
+  },
+  {
+   "id": "n2598517950",
+   "osmType": "node",
+   "osmId": 2598517950,
+   "lat": 10.034739,
+   "lon": 105.788997,
+   "kind": "public"
+  },
+  {
+   "id": "n2598517955",
+   "osmType": "node",
+   "osmId": 2598517955,
+   "lat": 10.03484,
+   "lon": 105.785529,
+   "kind": "public"
+  },
+  {
+   "id": "n2598564951",
+   "osmType": "node",
+   "osmId": 2598564951,
+   "lat": 10.109231,
+   "lon": 105.618102,
+   "kind": "public"
+  },
+  {
+   "id": "n2598936709",
+   "osmType": "node",
+   "osmId": 2598936709,
+   "lat": 12.242844,
+   "lon": 109.196644,
+   "kind": "public"
+  },
+  {
+   "id": "n2598936710",
+   "osmType": "node",
+   "osmId": 2598936710,
+   "lat": 12.245948,
+   "lon": 109.196163,
+   "kind": "public"
+  },
+  {
+   "id": "n2598936749",
+   "osmType": "node",
+   "osmId": 2598936749,
+   "lat": 12.256479,
+   "lon": 109.197486,
+   "kind": "public"
+  },
+  {
+   "id": "n2598944963",
+   "osmType": "node",
+   "osmId": 2598944963,
+   "lat": 12.242693,
+   "lon": 109.194534,
+   "kind": "public"
+  },
+  {
+   "id": "n2598944972",
+   "osmType": "node",
+   "osmId": 2598944972,
+   "lat": 12.244914,
+   "lon": 109.191721,
+   "kind": "public"
+  },
+  {
+   "id": "n2610912134",
+   "osmType": "node",
+   "osmId": 2610912134,
+   "lat": 10.252825,
+   "lon": 105.977252,
+   "kind": "public"
+  },
+  {
+   "id": "n2614395043",
+   "osmType": "node",
+   "osmId": 2614395043,
+   "lat": 10.756208,
+   "lon": 106.684787,
+   "kind": "public"
+  },
+  {
+   "id": "n2616958837",
+   "osmType": "node",
+   "osmId": 2616958837,
+   "lat": 10.773664,
+   "lon": 106.70007,
+   "kind": "public"
+  },
+  {
+   "id": "n2616958839",
+   "osmType": "node",
+   "osmId": 2616958839,
+   "lat": 10.774522,
+   "lon": 106.701078,
+   "kind": "public"
+  },
+  {
+   "id": "n2616958842",
+   "osmType": "node",
+   "osmId": 2616958842,
+   "lat": 10.77535,
+   "lon": 106.704092,
+   "kind": "public",
+   "name": "Trung Nguyên Coffee"
+  },
+  {
+   "id": "n2616958843",
+   "osmType": "node",
+   "osmId": 2616958843,
+   "lat": 10.77619,
+   "lon": 106.700996,
+   "kind": "public"
+  },
+  {
+   "id": "n2616958844",
+   "osmType": "node",
+   "osmId": 2616958844,
+   "lat": 10.776417,
+   "lon": 106.70099,
+   "kind": "public"
+  },
+  {
+   "id": "n2616975925",
+   "osmType": "node",
+   "osmId": 2616975925,
+   "lat": 10.776671,
+   "lon": 106.698026,
+   "kind": "public"
+  },
+  {
+   "id": "n2617007586",
+   "osmType": "node",
+   "osmId": 2617007586,
+   "lat": 15.877398,
+   "lon": 108.328677,
+   "kind": "public"
+  },
+  {
+   "id": "n2623083082",
+   "osmType": "node",
+   "osmId": 2623083082,
+   "lat": 16.049354,
+   "lon": 108.221873,
+   "kind": "public"
+  },
+  {
+   "id": "n2623083100",
+   "osmType": "node",
+   "osmId": 2623083100,
+   "lat": 16.065548,
+   "lon": 108.202145,
+   "kind": "public"
+  },
+  {
+   "id": "n2628329722",
+   "osmType": "node",
+   "osmId": 2628329722,
+   "lat": 15.879598,
+   "lon": 108.331998,
+   "kind": "public"
+  },
+  {
+   "id": "n2628520058",
+   "osmType": "node",
+   "osmId": 2628520058,
+   "lat": 16.456976,
+   "lon": 107.578301,
+   "kind": "public"
+  },
+  {
+   "id": "n2628520065",
+   "osmType": "node",
+   "osmId": 2628520065,
+   "lat": 16.463911,
+   "lon": 107.58636,
+   "kind": "public"
+  },
+  {
+   "id": "n2628520068",
+   "osmType": "node",
+   "osmId": 2628520068,
+   "lat": 16.467355,
+   "lon": 107.590384,
+   "kind": "public"
+  },
+  {
+   "id": "n2628520069",
+   "osmType": "node",
+   "osmId": 2628520069,
+   "lat": 16.467362,
+   "lon": 107.583487,
+   "kind": "public"
+  },
+  {
+   "id": "n309819589",
+   "osmType": "node",
+   "osmId": 309819589,
+   "lat": 21.046129,
+   "lon": 105.782064,
+   "kind": "traffic"
+  },
+  {
+   "id": "n4910377745",
+   "osmType": "node",
+   "osmId": 4910377745,
+   "lat": 21.050395,
+   "lon": 105.781816,
+   "kind": "traffic"
+  },
+  {
+   "id": "n4910377746",
+   "osmType": "node",
+   "osmId": 4910377746,
+   "lat": 21.050215,
+   "lon": 105.781335,
+   "kind": "traffic"
+  },
+  {
+   "id": "n7500135757",
+   "osmType": "node",
+   "osmId": 7500135757,
+   "lat": 10.776379,
+   "lon": 106.701365,
+   "kind": "public"
+  },
+  {
+   "id": "n7520799000",
+   "osmType": "node",
+   "osmId": 7520799000,
+   "lat": 10.77082,
+   "lon": 106.704361,
+   "kind": "public"
+  },
+  {
+   "id": "n8359734753",
+   "osmType": "node",
+   "osmId": 8359734753,
+   "lat": 10.959721,
+   "lon": 106.688456,
+   "kind": "traffic",
+   "direction": "350"
+  },
+  {
+   "id": "n993037613",
+   "osmType": "node",
+   "osmId": 993037613,
+   "lat": 21.023191,
+   "lon": 105.850915,
+   "kind": "public"
+  },
+  {
+   "id": "r14381433",
+   "osmType": "relation",
+   "osmId": 14381433,
+   "lat": 10.236916,
+   "lon": 106.378918,
+   "kind": "speed",
+   "name": "to NDTQ 10 khu pho 1",
+   "maxspeed": 20
+  },
+  {
+   "id": "r16204032",
+   "osmType": "relation",
+   "osmId": 16204032,
+   "lat": 12.1637,
+   "lon": 109.31818,
+   "kind": "traffic"
+  },
+  {
+   "id": "r21073426",
+   "osmType": "relation",
+   "osmId": 21073426,
+   "lat": 17.445297,
+   "lon": 106.632413,
+   "kind": "traffic"
+  }
+ ]
+}

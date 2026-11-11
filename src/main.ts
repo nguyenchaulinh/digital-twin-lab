@@ -1,27 +1,43 @@
 import * as THREE from "three";
 import { advise, summarize, type AdviceAction } from "./advisor";
-import { createBuildingView, type BuildingView } from "./building-view";
+import { loadAerial } from "./aerial";
+import { createBuildingView, type BuildingMode, type BuildingView } from "./building-view";
 import {
   createBuildingTable,
   createFloorTable,
-  createTownshipSwitch,
+  createPlacesList,
+  getTownsScroll,
   onBack,
+  onDetailMode,
+  onDetailStreet,
+  onMapBack,
   setDetail,
+  setDetailMode,
   setHint,
   setRows,
-  showDetail,
+  setTownsScroll,
+  setTownshipTitle,
+  showPanel,
   type BuildingStats,
+  type BuildingTable,
   type FloorTable,
   type Row,
 } from "./hud";
 import { applyStatic, fmt, getLang, onLangChange, setLang, t, type Key } from "./i18n";
+import type { Camera, CameraKind, CameraText } from "./camera-layer";
+import { officialSourceAt, type OfficialSourceId } from "./camera-sources";
+import { createMapView } from "./map-view";
+import { createStreetView } from "./street-view";
+import { fromMetres } from "./tiles";
 import { ALERT_TEMP, predictTemp } from "./model";
-import { camera, canvas, controls, frameView, renderer, scene } from "./scene";
-import { METRES_PER_LEVEL, buildingIds, townships, type TownshipData } from "./township-data";
-import { createTownshipView } from "./township-view";
+import { camera, canvas, controls, frameView, renderer, resize, scene, setZoomLimit } from "./scene";
+import { METRES_PER_LEVEL, catalog, loadTownship, type CatalogEntry, type TownshipData } from "./township-data";
+import { createTownshipView, type TownshipView } from "./township-view";
 import { isSnapshot, type RoomState, type Snapshot } from "./types";
 
 const WS_URL = "ws://127.0.0.1:8787";
+const RECONNECT_MS = 2000;
+const ANISOTROPY = Math.min(8, renderer.capabilities.getMaxAnisotropy()); // keeps the facade sharp at a grazing angle
 const CLICK_SLOP_PX = 5; // a drag that ends on the canvas is a camera move, not a click
 const TOOLTIP_OFFSET_PX = 14;
 
@@ -53,21 +69,29 @@ function stationName(name: string): string {
   return getLang() === "vi" ? name.slice(open + 1, -1).trim() : name.slice(0, open).trim();
 }
 
-// --- State: one township overview at a time, and at most one building opened from it ---
-const DEFAULT_TOWNSHIP_ID = "smart-city";
-let activeTownship: TownshipData = townships.find((x) => x.id === DEFAULT_TOWNSHIP_ID) ?? townships[0];
-let townshipView = createTownshipView(activeTownship);
-scene.add(townshipView.group);
-frameView(townshipView.center, townshipView.radius);
+// --- State: the map of Vietnam, or one township opened from it (3D), and at most one building opened from that ---
+const catalogById = new Map(catalog.map((e) => [e.id, e]));
+let activeTownship: TownshipData | null = null; // null = the map is showing
+let activeBuildingIds: ReadonlySet<string> = new Set();
+let townshipView: TownshipView | null = null;
+let table: BuildingTable | null = null;
+let openToken = 0; // a township load that is no longer the latest one is dropped when it finishes
+let loadingName: string | null = null;
+let loadFailed = false;
+// A building picked on the map: it opens once the township's first snapshot is in (rooms are needed to build it)
+let pendingBuilding: string | null = null;
 
 let latest: Snapshot | null = null;
 let openBuildingId: string | null = null;
 let buildingView: BuildingView | null = null;
 let floorTable: FloorTable | null = null;
 let selectedRoomId: string | null = null;
+let buildingMode: BuildingMode = "facade"; // kept from one building to the next
+// Scroll of the township list when a building was opened; the hidden panel loses it, so it is put back on close
+let townsScroll: number | null = null;
 
 const roomsOf = (snap: Snapshot, buildingId: string): RoomState[] => snap.rooms.filter((r) => r.building === buildingId);
-const townshipIds = (): Set<string> => new Set(activeTownship.buildings.map((b) => b.id));
+const placeOf = (e: { city: string | null; ward: string | null }): string => [e.ward, e.city].filter(Boolean).join(", ");
 
 function avgTemp(rooms: RoomState[]): number | null {
   return rooms.length === 0 ? null : rooms.reduce((sum, r) => sum + r.temp, 0) / rooms.length;
@@ -85,14 +109,24 @@ function disposeBuilding(): void {
 }
 
 function openBuilding(id: string): void {
-  const building = activeTownship.buildings.find((b) => b.id === id);
-  if (!latest || !building) return;
+  const township = activeTownship;
+  const building = township?.buildings.find((b) => b.id === id);
+  if (!township || !latest || !building || !townshipView) return;
   const rooms = roomsOf(latest, id);
   if (rooms.length === 0) return;
+  if (!openBuildingId) townsScroll = getTownsScroll();
   disposeBuilding();
   clearHover();
-  buildingView = createBuildingView(building, rooms);
-  scene.add(buildingView.group);
+  const view = createBuildingView(building, rooms, ANISOTROPY);
+  view.setMode(buildingMode);
+  buildingView = view;
+  scene.add(view.group);
+  // Satellite ground and roof arrive later, or not at all; a building closed meanwhile drops them
+  void loadAerial(township.origin, view.centre2d, ANISOTROPY).then((aerial) => {
+    if (!aerial) return;
+    if (buildingView === view) view.setAerial(aerial);
+    else aerial.texture.dispose();
+  });
   townshipView.focus(id);
   floorTable = createFloorTable(rooms, selectRoom, (roomId) => buildingView?.setHover(roomId));
   openBuildingId = id;
@@ -103,9 +137,11 @@ function openBuilding(id: string): void {
 function closeBuilding(): void {
   disposeBuilding();
   clearHover();
-  townshipView.focus(null);
-  frameView(townshipView.center, townshipView.radius);
-  refresh();
+  townshipView?.focus(null);
+  if (townshipView) setZoomLimit(townshipView.radius); // leave the camera where it is, only allow zooming out to the township again
+  refresh(); // un-hides the township panel, which has to happen before its scroll can be restored
+  if (townsScroll !== null) setTownsScroll(townsScroll);
+  townsScroll = null;
 }
 
 function selectRoom(roomId: string | null): void {
@@ -113,39 +149,117 @@ function selectRoom(roomId: string | null): void {
   refresh();
 }
 
-let table = createBuildingTable(activeTownship.buildings, openBuilding, onRowHover);
-
-function selectTownship(id: string): void {
-  const next = townships.find((t) => t.id === id);
-  if (!next || next === activeTownship) return;
+// Drops the open township (and its building) and returns to the "no township" state
+function leaveTownship(): void {
   disposeBuilding();
   clearHover();
-  scene.remove(townshipView.group);
-  townshipView.dispose();
-  activeTownship = next;
-  townshipView = createTownshipView(next);
-  scene.add(townshipView.group);
-  frameView(townshipView.center, townshipView.radius);
-  table = createBuildingTable(next.buildings, openBuilding, onRowHover);
+  if (townshipView) {
+    scene.remove(townshipView.group);
+    townshipView.dispose();
+  }
+  townshipView = null;
+  table = null;
+  activeTownship = null;
+  activeBuildingIds = new Set();
+  latest = null;
+  townsScroll = null;
   highlightedId = null;
+}
+
+function enterTownship(data: TownshipData): void {
+  leaveTownship();
+  activeTownship = data;
+  activeBuildingIds = new Set(data.buildings.map((b) => b.id));
+  townshipView = createTownshipView(data);
+  scene.add(townshipView.group);
+  table = createBuildingTable(data.buildings, openBuilding, onRowHover);
+  mapView.hide();
+  canvas.classList.remove("off");
+  resize();
+  frameView(townshipView.center, townshipView.radius);
+  sendWatch(data.id);
+  refresh();
+}
+
+// The geometry of a township is a separate file, so opening one is asynchronous
+// With `buildingId` (clicked on the map) the building opens as soon as the first snapshot has arrived
+async function openTownship(id: string, buildingId?: string): Promise<void> {
+  const entry = catalogById.get(id);
+  if (!entry) return;
+  const token = ++openToken;
+  pendingBuilding = buildingId ?? null;
+  loadingName = entry.name;
+  loadFailed = false;
+  refresh();
+  let data: TownshipData;
+  try {
+    data = await loadTownship(id);
+  } catch {
+    if (token === openToken) {
+      pendingBuilding = null;
+      loadingName = null;
+      loadFailed = true;
+      refresh();
+    }
+    return;
+  }
+  if (token !== openToken) return;
+  loadingName = null;
+  enterTownship(data);
+}
+
+function backToMap(): void {
+  openToken++; // cancels a load in progress
+  pendingBuilding = null;
+  loadingName = null;
+  loadFailed = false;
+  leaveTownship();
+  canvas.classList.add("off");
+  mapView.show();
+  sendWatch(null);
   refresh();
 }
 
 // --- Telemetry in (layers 1-2): the twin only mirrors what the physical side reports ---
-const ws = new WebSocket(WS_URL);
-ws.onopen = () => refresh();
-ws.onclose = () => refresh();
-ws.onmessage = (ev) => {
-  let data: unknown;
-  try {
-    data = JSON.parse(String(ev.data));
-  } catch {
-    return;
-  }
-  if (!isSnapshot(data, buildingIds)) return;
-  latest = data;
-  refresh();
-};
+// The simulator only streams the township being watched; null stops the stream (the map is showing)
+let watched: string | null = null;
+let ws: WebSocket;
+function sendWatch(id: string | null): void {
+  watched = id;
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "watch", township: id }));
+}
+
+// The simulator can be restarted while the page is open: reconnect, and the open handler watches the
+// township that is on screen again, so nothing has to be reopened by hand
+function connect(): void {
+  const socket = new WebSocket(WS_URL);
+  ws = socket;
+  socket.onopen = () => {
+    sendWatch(watched);
+    refresh();
+  };
+  socket.onclose = () => {
+    refresh();
+    setTimeout(connect, RECONNECT_MS);
+  };
+  socket.onmessage = (ev) => {
+    let data: unknown;
+    try {
+      data = JSON.parse(String(ev.data));
+    } catch {
+      return;
+    }
+    if (!activeTownship || !isSnapshot(data, activeTownship.id, activeBuildingIds)) return;
+    latest = data;
+    if (pendingBuilding) {
+      const id = pendingBuilding;
+      pendingBuilding = null;
+      openBuilding(id);
+    }
+    refresh();
+  };
+}
+connect();
 
 // --- Control back (layer 5): command to the physical side ---
 function toggleAc(roomId: string): void {
@@ -168,7 +282,7 @@ function pickAt(clientX: number, clientY: number): THREE.Intersection | undefine
     -((clientY - rect.top) / rect.height) * 2 + 1,
   );
   raycaster.setFromCamera(ndc, camera);
-  return raycaster.intersectObjects(buildingView?.pickables ?? townshipView.pickables, false)[0];
+  return raycaster.intersectObjects(buildingView?.pickables ?? townshipView?.pickables ?? [], false)[0];
 }
 
 // --- Hover. Township view: a building glows and its table row is highlighted, from either side, and
@@ -194,8 +308,8 @@ function showTooltip(text: string | null): void {
 function highlight(id: string | null): void {
   if (id === highlightedId) return;
   highlightedId = id;
-  townshipView.setHover(id);
-  table.setHover(id);
+  townshipView?.setHover(id);
+  table?.setHover(id);
 }
 
 function onRowHover(id: string | null): void {
@@ -205,7 +319,7 @@ function onRowHover(id: string | null): void {
 function hoverBuilding(id: string | null): void {
   highlight(id);
   canvas.style.cursor = id ? "pointer" : "";
-  showTooltip(activeTownship.buildings.find((b) => b.id === id)?.name ?? null);
+  showTooltip(activeTownship?.buildings.find((b) => b.id === id)?.name ?? null);
 }
 
 function hoverRoom(id: string | null): void {
@@ -244,19 +358,89 @@ canvas.addEventListener("click", (ev) => {
   else if (hit) openBuilding(hit.object.userData.buildingId as string);
 });
 window.addEventListener("keydown", (ev) => {
-  if (ev.key === "Escape" && openBuildingId) closeBuilding();
-  else if (ev.key.toLowerCase() === "a" && openBuildingId && selectedRoomId) toggleAc(selectedRoomId);
+  if (ev.key === "Escape") {
+    if (streetView.isOpen()) streetView.close();
+    else if (openBuildingId) closeBuilding();
+    else if (activeTownship) backToMap();
+  } else if (ev.key.toLowerCase() === "a" && openBuildingId && selectedRoomId) toggleAc(selectedRoomId);
 });
 
+// --- Street view (Mapillary): from a point on the map, a township's popup, or the open building ---
+const streetView = createStreetView(import.meta.env.VITE_MAPILLARY_TOKEN);
+onDetailStreet(() => {
+  if (!activeTownship || !buildingView) return;
+  const [lon, lat] = fromMetres(activeTownship.origin, ...buildingView.centre2d);
+  void streetView.open(lon, lat);
+}, streetView.available);
+
+// --- Building look: facade or sensors ---
+onDetailMode((mode) => {
+  buildingMode = mode;
+  buildingView?.setMode(mode);
+  setDetailMode(mode);
+});
+setDetailMode(buildingMode);
+
+// --- Cameras on the map: what each one is, and the official service of its area (link only) ---
+const CAMERA_KINDS: Record<CameraKind, Key> = {
+  speed: "camera.kind.speed",
+  red_light: "camera.kind.redLight",
+  traffic: "camera.kind.traffic",
+  public: "camera.kind.public",
+};
+const OFFICIAL_KEYS: Record<OfficialSourceId, Key> = { hcmc: "camera.official.hcmc", hanoi: "camera.official.hanoi" };
+
+function describeCamera(camera: Camera): CameraText {
+  const lines: string[] = [];
+  if (camera.name) lines.push(camera.name);
+  if (camera.ref) lines.push(t("camera.ref", { r: camera.ref }));
+  if (camera.maxspeed !== undefined) lines.push(t("camera.maxspeed", { v: camera.maxspeed }));
+  if (camera.direction) lines.push(t("camera.direction", { d: camera.direction }));
+  lines.push(t("camera.positionOnly"));
+  const source = officialSourceAt(camera.lat, camera.lon);
+  return {
+    title: t(CAMERA_KINDS[camera.kind]),
+    lines,
+    official: source ? { label: t(OFFICIAL_KEYS[source.id]), url: source.url } : { label: t("camera.official.none"), url: null },
+    osm: t("camera.osm", { type: camera.osmType, id: camera.osmId }),
+    street: t("street.open"),
+  };
+}
+
 // --- HUD ---
-const setActiveSwitch = createTownshipSwitch(
-  townships.map((x) => ({ id: x.id, label: x.shortName })),
-  selectTownship,
-);
+const mapView = createMapView(document.getElementById("map") as HTMLElement, catalog, {
+  onOpen: (id) => void openTownship(id),
+  onOpenBuilding: (townshipId, buildingId) => void openTownship(townshipId, buildingId),
+  onStreetView: streetView.available ? (lon, lat) => void streetView.open(lon, lat) : undefined,
+  load: loadTownship,
+  describe: (e: CatalogEntry) => ({
+    title: e.name,
+    detail: `${placeOf(e)} · ${t("map.detail", { towers: e.towers, levels: e.tallest })}`,
+    action: t("map.open"),
+    street: t("street.open"),
+  }),
+  describeCamera,
+  labels: () => ({
+    map: t("map.layerMap"),
+    satellite: t("map.layerSatellite"),
+    street: t("street.open"),
+    cameras: t("camera.toggle"),
+  }),
+});
+const renderPlaces = createPlacesList((id) => mapView.focus(id));
+const updatePlaces = (): void =>
+  renderPlaces(
+    catalog.map((e) => ({
+      id: e.id,
+      name: e.name,
+      secondary: `${placeOf(e)} · ${t("map.detail", { towers: e.towers, levels: e.tallest })}`,
+      search: placeOf(e),
+    })),
+  );
 
 function buildRows(snap: Snapshot): Row[] {
-  const ids = townshipIds();
-  const scope = openBuildingId ? roomsOf(snap, openBuildingId) : snap.rooms.filter((r) => ids.has(r.building));
+  // A snapshot only holds the township being viewed
+  const scope = openBuildingId ? roomsOf(snap, openBuildingId) : snap.rooms;
   const rows: Row[] = [];
 
   const day = Math.floor(snap.simMinutes / 1440);
@@ -266,7 +450,7 @@ function buildRows(snap: Snapshot): Row[] {
 
   const live = snap.outsideSource === "open-meteo";
   rows.push({
-    label: t("hud.outside"),
+    label: t("hud.outside", { city: activeTownship?.city ?? "–" }),
     value: `${fmt(snap.outside, 1)} °C · ${t(live ? "hud.live" : "hud.synthetic")}`,
     alert: !live,
   });
@@ -283,7 +467,7 @@ function buildRows(snap: Snapshot): Row[] {
   if (!openBuildingId) {
     const alerts = scope.filter((r) => r.temp > ALERT_TEMP).length;
     rows.push({ label: t("hud.roomsOver"), value: `${alerts} / ${scope.length}`, alert: alerts > 0 });
-    const kwh = snap.buildings.filter((b) => ids.has(b.id)).reduce((sum, b) => sum + b.acKwh, 0);
+    const kwh = snap.buildings.reduce((sum, b) => sum + b.acKwh, 0);
     rows.push({ label: t("hud.acEnergy"), value: `${fmt(kwh, 1)} kWh` });
   }
 
@@ -313,8 +497,8 @@ function buildRows(snap: Snapshot): Row[] {
 
 // The right-hand detail panel of the open building: name, facts and the instrumented floors
 function updateDetail(snap: Snapshot): void {
-  const building = activeTownship.buildings.find((b) => b.id === openBuildingId);
-  if (!building || !buildingView || !floorTable) return;
+  const building = activeTownship?.buildings.find((b) => b.id === openBuildingId);
+  if (!activeTownship || !building || !buildingView || !floorTable) return;
   const rooms = roomsOf(snap, building.id);
   const alerts = rooms.filter((r) => r.temp > ALERT_TEMP).length;
   const avg = avgTemp(rooms);
@@ -342,11 +526,21 @@ function updateDetail(snap: Snapshot): void {
 function refresh(): void {
   const connected = ws.readyState === WebSocket.OPEN;
   const rows: Row[] = [{ label: t("hud.connection"), value: t(connected ? "hud.live" : "hud.disconnected"), alert: !connected }];
+
+  if (!activeTownship) {
+    // Map view: no township is simulated, so there is nothing else to report
+    rows.push({ label: t("hud.townships"), value: String(catalog.length) });
+    setRows(rows);
+    setHint(loadFailed ? t("map.loadFailed") : loadingName ? t("map.loading", { name: loadingName }) : t("hint.map"));
+    showPanel("places");
+    return;
+  }
+
   if (latest) rows.push(...buildRows(latest));
   setRows(rows);
   setHint(t(openBuildingId ? "hint.building" : "hint.township"));
-  showDetail(openBuildingId !== null);
-  setActiveSwitch(activeTownship.id);
+  setTownshipTitle(activeTownship.name, placeOf(activeTownship));
+  showPanel(openBuildingId ? "detail" : "towns");
 
   if (!latest) return;
   const stats = new Map<string, BuildingStats>();
@@ -358,8 +552,8 @@ function refresh(): void {
     const kwh = latest.buildings.find((e) => e.id === b.id)?.acKwh ?? 0;
     stats.set(b.id, { avgTemp: avg, alerts: rooms.filter((r) => r.temp > ALERT_TEMP).length, kwh });
   }
-  table.update(stats, openBuildingId);
-  townshipView.setTemps(avgByBuilding);
+  table?.update(stats, openBuildingId);
+  townshipView?.setTemps(avgByBuilding);
   if (buildingView && openBuildingId) {
     buildingView.setRooms(roomsOf(latest, openBuildingId), selectedRoomId);
     updateDetail(latest);
@@ -367,14 +561,23 @@ function refresh(): void {
 }
 
 onBack(closeBuilding);
-onLangChange(refresh);
+onMapBack(backToMap);
+onLangChange(() => {
+  mapView.relabel();
+  streetView.relabel();
+  updatePlaces();
+  refresh();
+});
 for (const button of document.querySelectorAll<HTMLButtonElement>("button[data-lang]")) {
   button.addEventListener("click", () => setLang(button.dataset.lang ?? ""));
 }
 applyStatic();
+updatePlaces();
+mapView.show(); // the app starts on the map
 refresh();
 
 renderer.setAnimationLoop(() => {
+  if (!activeTownship) return; // the 3D canvas is hidden while the map is showing
   controls.update();
   renderer.render(scene, camera);
 });

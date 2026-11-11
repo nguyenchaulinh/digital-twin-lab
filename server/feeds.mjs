@@ -1,9 +1,11 @@
-// Live outside data for Hanoi: Open-Meteo (temperature) and AQICN/WAQI (air quality).
-// All URLs are fixed; only the AQICN token and station id come from the environment.
-export const HANOI = { latitude: 21.0285, longitude: 105.8542, timeZone: "Asia/Ho_Chi_Minh" };
+// Live outside data for a point in Vietnam: Open-Meteo (temperature) and AQICN/WAQI (air quality,
+// nearest station). All URLs are fixed; only the AQICN token comes from the environment and the
+// coordinates come from the township data files, never from a client.
+export const TIME_ZONE = "Asia/Ho_Chi_Minh";
+// Rough bounding box of Vietnam (incl. islands): anything outside is rejected before it reaches a URL
+const VIETNAM_BOUNDS = { minLat: 8, maxLat: 24, minLon: 102, maxLon: 110 };
 
 const FETCH_TIMEOUT_MS = 8000;
-const STATION_PATTERN = /^@\d{1,7}$/;
 const STATION_NAME_MAX = 200; // real names with a Vietnamese translation reach ~95 chars
 
 async function fetchJson(url) {
@@ -41,17 +43,28 @@ export function parseAirFeed(body) {
   };
 }
 
-export async function fetchHanoiTemp() {
+export function checkPoint({ lat, lon }) {
+  const ok =
+    Number.isFinite(lat) && Number.isFinite(lon) &&
+    lat >= VIETNAM_BOUNDS.minLat && lat <= VIETNAM_BOUNDS.maxLat &&
+    lon >= VIETNAM_BOUNDS.minLon && lon <= VIETNAM_BOUNDS.maxLon;
+  if (!ok) throw new Error("invalid coordinates");
+  return { lat: Number(lat.toFixed(4)), lon: Number(lon.toFixed(4)) };
+}
+
+export async function fetchTemp(point) {
+  const { lat, lon } = checkPoint(point);
   const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", String(HANOI.latitude));
-  url.searchParams.set("longitude", String(HANOI.longitude));
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
   url.searchParams.set("current", "temperature_2m");
   return parseWeather(await fetchJson(url));
 }
 
-export async function fetchHanoiAir(token, station) {
-  if (!STATION_PATTERN.test(station)) throw new Error("invalid AQICN station id");
-  const url = new URL(`https://api.waqi.info/feed/${station}/`);
+// "geo:lat;lon" asks WAQI for the nearest station, which may be some distance away (the name is shown)
+export async function fetchAir(token, point) {
+  const { lat, lon } = checkPoint(point);
+  const url = new URL(`https://api.waqi.info/feed/geo:${lat};${lon}/`);
   url.searchParams.set("token", token);
   return parseAirFeed(await fetchJson(url));
 }

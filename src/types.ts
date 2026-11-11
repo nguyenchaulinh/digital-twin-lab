@@ -19,6 +19,7 @@ export interface BuildingEnergy {
 }
 
 export interface Snapshot {
+  township: string;
   outside: number;
   outsideSource: "open-meteo" | "synthetic";
   air: AirState | null;
@@ -44,11 +45,13 @@ function isAir(air: unknown): air is AirState {
   );
 }
 
-// The snapshot comes from a local WebSocket, but it is still validated: type, range, known ids
-export function isSnapshot(data: unknown, buildingIds: ReadonlySet<string>): data is Snapshot {
+// The snapshot comes from a local WebSocket, but it is still validated: type, range, and that it is for
+// the township being viewed and only names its buildings
+export function isSnapshot(data: unknown, townshipId: string, buildingIds: ReadonlySet<string>): data is Snapshot {
   const d = data as Snapshot;
   return (
-    Array.isArray(d?.rooms) &&
+    d?.township === townshipId &&
+    Array.isArray(d.rooms) &&
     d.rooms.length <= MAX_ROOMS &&
     Array.isArray(d.buildings) &&
     d.buildings.length <= MAX_BUILDINGS &&
