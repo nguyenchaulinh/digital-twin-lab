@@ -1,10 +1,9 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { tempColor } from "./color";
+import { NO_DATA_COLOR, tempColor } from "./color";
 import { ribbonTriangles } from "./geometry";
 import { METRES_PER_LEVEL, type AreaPolygon, type TownshipData } from "./township-data";
 
-const NO_DATA_COLOR = 0x475569;
 const CONTEXT_COLOR = 0x334155;
 const HOVER_GLOW = 0x38bdf8;
 const AREA_COLORS: Record<AreaPolygon["kind"], number> = { green: 0x14532d, water: 0x0c4a6e, sport: 0x3f6212, parking: 0x1f2937 };

@@ -17,6 +17,7 @@ import {
   setRows,
   setTownsScroll,
   setTownshipTitle,
+  showLegend,
   showPanel,
   type BuildingStats,
   type BuildingTable,
@@ -34,6 +35,7 @@ import { camera, canvas, controls, frameView, renderer, resize, scene, setZoomLi
 import { METRES_PER_LEVEL, catalog, loadTownship, type CatalogEntry, type TownshipData } from "./township-data";
 import { createTownshipView, type TownshipView } from "./township-view";
 import { isSnapshot, type RoomState, type Snapshot } from "./types";
+import { formatHash, parseHash, type UrlState } from "./url-state";
 
 const WS_URL = "ws://127.0.0.1:8787";
 const RECONNECT_MS = 2000;
@@ -77,9 +79,12 @@ let townshipView: TownshipView | null = null;
 let table: BuildingTable | null = null;
 let openToken = 0; // a township load that is no longer the latest one is dropped when it finishes
 let loadingName: string | null = null;
+let loadingId: string | null = null;
 let loadFailed = false;
-// A building picked on the map: it opens once the township's first snapshot is in (rooms are needed to build it)
+// A building picked on the map (or named in the URL): it opens once the township's first snapshot is in
+// (rooms are needed to build it). A room named in the URL is selected right after.
 let pendingBuilding: string | null = null;
+let pendingRoom: string | null = null;
 
 let latest: Snapshot | null = null;
 let openBuildingId: string | null = null;
@@ -89,6 +94,55 @@ let selectedRoomId: string | null = null;
 let buildingMode: BuildingMode = "facade"; // kept from one building to the next
 // Scroll of the township list when a building was opened; the hidden panel loses it, so it is put back on close
 let townsScroll: number | null = null;
+
+// --- URL state: township, building, room and view live in the hash (url-state.ts), so a reload or a
+// shared link comes back to the same place. replaceState, not pushState: the hash follows where you
+// are, it does not add a history entry for every click. ---
+let urlReady = false; // nothing is written until the hash the page was opened with has been read
+
+function syncUrl(): void {
+  if (!urlReady) return;
+  const township = activeTownship?.id ?? loadingId;
+  const building = township ? (openBuildingId ?? pendingBuilding) : null;
+  const state: UrlState = {
+    township,
+    building,
+    room: building ? (openBuildingId ? selectedRoomId : pendingRoom) : null,
+    mode: building ? buildingMode : null,
+  };
+  const hash = formatHash(state);
+  if (hash === location.hash) return; // refresh() runs every second; browsers rate-limit replaceState
+  history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
+}
+
+// Open whatever the hash names. Everything in it is checked again here: the township must be in the
+// catalog, the building in that township, the room in the live snapshot.
+function applyUrlState(state: UrlState): void {
+  if (state.mode) {
+    buildingMode = state.mode;
+    setDetailMode(state.mode);
+    buildingView?.setMode(state.mode);
+  }
+  const id = state.township;
+  if (!id || !catalogById.has(id)) {
+    if (activeTownship || loadingId) backToMap();
+    return;
+  }
+  pendingRoom = state.room;
+  if (activeTownship?.id === id) {
+    // Same township: just move to the building asked for
+    if (state.building && state.building !== openBuildingId) {
+      openBuilding(state.building);
+      selectPendingRoom();
+    } else if (!state.building && openBuildingId) {
+      closeBuilding();
+    } else {
+      selectPendingRoom();
+    }
+    return;
+  }
+  void openTownship(id, state.building ?? undefined);
+}
 
 const roomsOf = (snap: Snapshot, buildingId: string): RoomState[] => snap.rooms.filter((r) => r.building === buildingId);
 const placeOf = (e: { city: string | null; ward: string | null }): string => [e.ward, e.city].filter(Boolean).join(", ");
@@ -149,6 +203,13 @@ function selectRoom(roomId: string | null): void {
   refresh();
 }
 
+// A room named in the URL is only taken if it is really in the open building's snapshot
+function selectPendingRoom(): void {
+  const room = pendingRoom;
+  pendingRoom = null;
+  if (room && openBuildingId && latest?.rooms.some((r) => r.id === room && r.building === openBuildingId)) selectRoom(room);
+}
+
 // Drops the open township (and its building) and returns to the "no township" state
 function leaveTownship(): void {
   disposeBuilding();
@@ -188,7 +249,9 @@ async function openTownship(id: string, buildingId?: string): Promise<void> {
   if (!entry) return;
   const token = ++openToken;
   pendingBuilding = buildingId ?? null;
+  if (!pendingBuilding) pendingRoom = null;
   loadingName = entry.name;
+  loadingId = id;
   loadFailed = false;
   refresh();
   let data: TownshipData;
@@ -197,7 +260,9 @@ async function openTownship(id: string, buildingId?: string): Promise<void> {
   } catch {
     if (token === openToken) {
       pendingBuilding = null;
+      pendingRoom = null;
       loadingName = null;
+      loadingId = null;
       loadFailed = true;
       refresh();
     }
@@ -205,13 +270,16 @@ async function openTownship(id: string, buildingId?: string): Promise<void> {
   }
   if (token !== openToken) return;
   loadingName = null;
+  loadingId = null;
   enterTownship(data);
 }
 
 function backToMap(): void {
   openToken++; // cancels a load in progress
   pendingBuilding = null;
+  pendingRoom = null;
   loadingName = null;
+  loadingId = null;
   loadFailed = false;
   leaveTownship();
   canvas.classList.add("off");
@@ -255,6 +323,7 @@ function connect(): void {
       const id = pendingBuilding;
       pendingBuilding = null;
       openBuilding(id);
+      selectPendingRoom();
     }
     refresh();
   };
@@ -378,6 +447,7 @@ onDetailMode((mode) => {
   buildingMode = mode;
   buildingView?.setMode(mode);
   setDetailMode(mode);
+  syncUrl();
 });
 setDetailMode(buildingMode);
 
@@ -524,6 +594,8 @@ function updateDetail(snap: Snapshot): void {
 }
 
 function refresh(): void {
+  syncUrl();
+  showLegend(activeTownship !== null);
   const connected = ws.readyState === WebSocket.OPEN;
   const rows: Row[] = [{ label: t("hud.connection"), value: t(connected ? "hud.live" : "hud.disconnected"), alert: !connected }];
 
@@ -573,7 +645,15 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("button[data-l
 }
 applyStatic();
 updatePlaces();
-mapView.show(); // the app starts on the map
+mapView.show(); // the app starts on the map, unless the hash names a township
+applyUrlState(parseHash(location.hash));
+urlReady = true;
+// A link edited by hand, or followed from elsewhere on the same page. (replaceState does not fire this.)
+// The hash is rewritten afterwards so that whatever could not be opened (an unknown township) is dropped from it.
+window.addEventListener("hashchange", () => {
+  applyUrlState(parseHash(location.hash));
+  syncUrl();
+});
 refresh();
 
 renderer.setAnimationLoop(() => {
