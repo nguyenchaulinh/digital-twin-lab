@@ -73,7 +73,7 @@ Restart `npm run sim` whenever the simulator code changes. The viewer rejects sn
 
 ### Demo override
 
-Open `http://localhost:5173/?demoAqi=160` to feed a fake AQI to the advisor and see it choose health over energy. The HUD shows a separate "AQI (demo override)" row so it cannot be mistaken for real data.
+Open `http://localhost:5173/?demoAqi=160`, or type a value in the "Test AQI" box of the advisor panel (0 to 500, whole numbers), to feed a fake AQI to the advisor and see it choose health over energy. The HUD shows a separate "AQI (demo override)" row so it cannot be mistaken for real data. The test AQI is never saved.
 
 ## Advisor policy
 
@@ -84,7 +84,7 @@ Health first, energy second (`src/advisor.ts`):
 3. AQI 100 or below, and outside at least 1 °C cooler than the room and not above 26 °C: ventilate instead of running AC.
 4. Otherwise: AC only when the room is above 26 °C.
 
-The thresholds (100, 26 °C, 1 °C) are **tunable assumptions, not standards**. The AC unit is assumed to be 1 kW rated and modulating, so "save up to X kW" is an upper bound, not a measured saving.
+The thresholds (100, 26 °C, 1 °C) are **tunable assumptions, not standards**, and the left panel lets you change them while a township is open: *Advisor thresholds* has a slider each for the AQI limit (0 to 300, step 5), the comfort limit (22 to 30 °C, step 0.5) and the margin by which outside must be cooler (0 to 5 °C, step 0.5), and the HUD shows how many rooms land on each outcome so the effect is visible at once. A changed panel is marked "(changed)" and *Reset* restores the defaults. The values are kept in this browser (`localStorage`, read back through the same range checks as the sliders) and are never sent anywhere. The "Why" line quotes the limit in use. Rules 3 and 4 above are written for the defaults. The AC unit is assumed to be 1 kW rated and modulating, so "save up to X kW" is an upper bound, not a measured saving.
 
 ## Scripts
 

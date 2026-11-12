@@ -73,7 +73,7 @@ Hãy restart `npm run sim` mỗi khi sửa code simulator. Viewer từ chối sn
 
 ### Ghi đè AQI để demo
 
-Mở `http://localhost:5173/?demoAqi=160` để đưa một AQI giả vào bộ khuyến nghị và xem nó ưu tiên sức khỏe hơn điện. HUD hiện một dòng riêng "AQI (ghi đè demo)" để không bị nhầm với dữ liệu thật.
+Mở `http://localhost:5173/?demoAqi=160`, hoặc gõ một giá trị vào ô "AQI thử" trong panel của bộ khuyến nghị (số nguyên từ 0 đến 500), để đưa một AQI giả vào bộ khuyến nghị và xem nó ưu tiên sức khỏe hơn điện. HUD hiện một dòng riêng "AQI (ghi đè demo)" để không bị nhầm với dữ liệu thật. AQI thử không bao giờ được lưu.
 
 ## Chính sách khuyến nghị
 
@@ -84,7 +84,7 @@ Sức khỏe trước, tiết kiệm điện sau (`src/advisor.ts`):
 3. AQI từ 100 trở xuống, ngoài trời mát hơn phòng ít nhất 1 °C và không quá 26 °C: thông gió thay vì bật điều hòa.
 4. Còn lại: chỉ bật điều hòa khi phòng vượt 26 °C.
 
-Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, không phải tiêu chuẩn**. Điều hòa được giả định công suất 1 kW và chạy điều biến, nên "tiết kiệm tối đa X kW" là cận trên, không phải mức tiết kiệm đo được.
+Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, không phải tiêu chuẩn**, và panel bên trái cho chỉnh ngay khi đang mở một khu: mục *Ngưỡng của bộ khuyến nghị* có mỗi ngưỡng một thanh trượt: giới hạn AQI (0 đến 300, bước 5), ngưỡng thoải mái (22 đến 30 °C, bước 0,5) và độ mát hơn tối thiểu của ngoài trời (0 đến 5 °C, bước 0,5); HUD hiện số phòng rơi vào từng kết quả nên thấy tác động ngay. Panel đã chỉnh được đánh dấu "(đã đổi)" và nút *Đặt lại* trả về mặc định. Giá trị được lưu trong trình duyệt này (`localStorage`, đọc lại qua đúng các giới hạn của thanh trượt) và không gửi đi đâu. Dòng "Lý do" ghi giới hạn đang dùng. Bốn quy tắc ở trên viết cho giá trị mặc định. Điều hòa được giả định công suất 1 kW và chạy điều biến, nên "tiết kiệm tối đa X kW" là cận trên, không phải mức tiết kiệm đo được.
 
 ## Lệnh
 

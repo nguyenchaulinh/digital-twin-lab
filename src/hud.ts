@@ -1,6 +1,14 @@
 import type { BuildingMode } from "./building-view";
 import { NO_DATA_COLOR, TEMP_MAX, TEMP_MIN, tempColor } from "./color";
 import { fmt, t } from "./i18n";
+import {
+  DEFAULT_THRESHOLDS,
+  THRESHOLD_LIMITS,
+  isDefaultThresholds,
+  sanitizeAqiOverride,
+  sanitizeThresholds,
+  type Thresholds,
+} from "./advisor";
 import { ALERT_TEMP } from "./model";
 import { arrange, nextSort, type SortKey, type SortState } from "./table-sort";
 import type { RoomState } from "./types";
@@ -192,6 +200,62 @@ export function showLegend(visible: boolean): void {
   byId("legend-min").textContent = t("legend.min", { t: TEMP_MIN });
   byId("legend-limit").textContent = t("legend.limit", { t: ALERT_TEMP });
   byId("legend-max").textContent = t("legend.max", { t: TEMP_MAX });
+}
+
+// --- Advisor settings: sliders for the policy thresholds, and a test AQI that replaces the real one ---
+export interface AdvisorSettings {
+  thresholds: Thresholds;
+  demoAqi: number | null;
+}
+
+export interface AdvisorPanel {
+  show: (visible: boolean) => void;
+  sync: (settings: AdvisorSettings) => void;
+}
+
+const THRESHOLD_KEYS = Object.keys(THRESHOLD_LIMITS) as Array<keyof Thresholds>;
+
+export function createAdvisorPanel(onChange: (settings: AdvisorSettings) => void): AdvisorPanel {
+  const panel = byId("advisor");
+  const demo = byId<HTMLInputElement>("th-demo");
+  const reset = byId<HTMLButtonElement>("th-reset");
+  const modified = byId("advisor-modified");
+  const sliders = new Map(
+    THRESHOLD_KEYS.map((key) => {
+      const input = byId<HTMLInputElement>(`th-${key}`);
+      const { min, max, step } = THRESHOLD_LIMITS[key];
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      return [key, input] as const;
+    }),
+  );
+
+  const read = (): AdvisorSettings => ({
+    thresholds: sanitizeThresholds(Object.fromEntries(THRESHOLD_KEYS.map((key) => [key, Number(sliders.get(key)?.value)]))),
+    demoAqi: sanitizeAqiOverride(demo.value),
+  });
+
+  for (const input of [...sliders.values(), demo]) input.addEventListener("input", () => onChange(read()));
+  reset.addEventListener("click", () => onChange({ thresholds: { ...DEFAULT_THRESHOLDS }, demoAqi: null }));
+
+  return {
+    show(visible) {
+      panel.hidden = !visible;
+    },
+    sync({ thresholds, demoAqi }) {
+      // refresh() runs every second: leave a control alone while it already shows the value, so a drag or typing is not fought
+      for (const key of THRESHOLD_KEYS) {
+        const input = sliders.get(key);
+        if (input && Number(input.value) !== thresholds[key]) input.value = String(thresholds[key]);
+        byId(`out-${key}`).textContent = key === "aqiVentMax" ? String(thresholds[key]) : `${fmt(thresholds[key], 1)} °C`;
+      }
+      if (document.activeElement !== demo && sanitizeAqiOverride(demo.value) !== demoAqi) demo.value = demoAqi === null ? "" : String(demoAqi);
+      const changed = !isDefaultThresholds(thresholds) || demoAqi !== null;
+      modified.hidden = !changed;
+      reset.disabled = !changed;
+    },
+  };
 }
 
 // --- Building table: sortable by column, filterable to the buildings with alerts ---

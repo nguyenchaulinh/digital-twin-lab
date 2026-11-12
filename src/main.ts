@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import { advise, summarize, type AdviceAction } from "./advisor";
+import { advise, sanitizeAqiOverride, summarize, type AdviceAction, type Thresholds } from "./advisor";
 import { loadAerial } from "./aerial";
 import { createBuildingView, type BuildingMode, type BuildingView } from "./building-view";
 import {
+  createAdvisorPanel,
   createBuildingTable,
   createFloorTable,
   createPlacesList,
@@ -34,6 +35,7 @@ import { ALERT_TEMP, predictTemp } from "./model";
 import { camera, canvas, controls, frameView, renderer, resize, scene, setZoomLimit } from "./scene";
 import { METRES_PER_LEVEL, catalog, loadTownship, type CatalogEntry, type TownshipData } from "./township-data";
 import { createTownshipView, type TownshipView } from "./township-view";
+import { loadThresholds, saveThresholds } from "./thresholds-store";
 import { isSnapshot, type RoomState, type Snapshot } from "./types";
 import { formatHash, parseHash, type UrlState } from "./url-state";
 
@@ -43,9 +45,10 @@ const ANISOTROPY = Math.min(8, renderer.capabilities.getMaxAnisotropy()); // kee
 const CLICK_SLOP_PX = 5; // a drag that ends on the canvas is a camera move, not a click
 const TOOLTIP_OFFSET_PX = 14;
 
-// Demo only: ?demoAqi=160 overrides the AQI fed to the advisor, to see the health-vs-energy rule at work
-const demoParam = new URLSearchParams(location.search).get("demoAqi");
-const DEMO_AQI = demoParam !== null && /^\d{1,3}$/.test(demoParam) ? Number(demoParam) : null;
+// Advisor settings: the thresholds (kept in this browser) and a test AQI that replaces the real one, to see
+// the health-vs-energy rule at work. ?demoAqi=160 sets the test AQI at load; the panel can change it.
+let thresholds: Thresholds = loadThresholds();
+let demoAqi: number | null = sanitizeAqiOverride(new URLSearchParams(location.search).get("demoAqi"));
 
 const ADVICE_KEYS: Record<AdviceAction, Key> = {
   "open-windows": "advice.open-windows",
@@ -104,12 +107,8 @@ function syncUrl(): void {
   if (!urlReady) return;
   const township = activeTownship?.id ?? loadingId;
   const building = township ? (openBuildingId ?? pendingBuilding) : null;
-  const state: UrlState = {
-    township,
-    building,
-    room: building ? (openBuildingId ? selectedRoomId : pendingRoom) : null,
-    mode: building ? buildingMode : null,
-  };
+  const room = openBuildingId ? selectedRoomId : pendingRoom;
+  const state: UrlState = { township, building, room: building ? room : null, mode: building ? buildingMode : null };
   const hash = formatHash(state);
   if (hash === location.hash) return; // refresh() runs every second; browsers rate-limit replaceState
   history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
@@ -497,6 +496,12 @@ const mapView = createMapView(document.getElementById("map") as HTMLElement, cat
     cameras: t("camera.toggle"),
   }),
 });
+const advisorPanel = createAdvisorPanel((settings) => {
+  thresholds = settings.thresholds;
+  demoAqi = settings.demoAqi;
+  saveThresholds(thresholds);
+  refresh();
+});
 const renderPlaces = createPlacesList((id) => mapView.focus(id));
 const updatePlaces = (): void =>
   renderPlaces(
@@ -531,7 +536,7 @@ function buildRows(snap: Snapshot): Row[] {
   } else {
     rows.push({ label: t("hud.aqi"), value: t("hud.na") });
   }
-  if (DEMO_AQI !== null) rows.push({ label: t("hud.aqiDemo"), value: String(DEMO_AQI), alert: true });
+  if (demoAqi !== null) rows.push({ label: t("hud.aqiDemo"), value: String(demoAqi), alert: true });
 
   // In the building view these totals move to the detail panel
   if (!openBuildingId) {
@@ -542,15 +547,18 @@ function buildRows(snap: Snapshot): Row[] {
   }
 
   // Advisor: health first, so the AQI decides before temperature does
-  const aqiForAdvice = DEMO_AQI ?? snap.air?.aqi ?? null;
+  const aqiForAdvice = demoAqi ?? snap.air?.aqi ?? null;
   const adviceFor = (r: RoomState) =>
-    advise({ roomTemp: r.temp, ac: r.ac, outsideTemp: snap.outside, aqi: aqiForAdvice, acPowerKw: snap.acPowerKw });
+    advise({ roomTemp: r.temp, ac: r.ac, outsideTemp: snap.outside, aqi: aqiForAdvice, acPowerKw: snap.acPowerKw, thresholds });
   const summary = summarize(scope.map(adviceFor));
   const saving = summary.saveKw > 0 ? t("hud.saveUpTo", { kw: fmt(summary.saveKw, 1) }) : "";
   rows.push({
     label: t("hud.ventInstead"),
     value: t("hud.roomsCount", { n: summary.counts["open-windows"] }) + saving,
   });
+  // The other two outcomes, so a change of threshold shows where the rooms go
+  rows.push({ label: t("advice.run-ac"), value: t("hud.roomsCount", { n: summary.counts["run-ac"] }) });
+  rows.push({ label: t("advice.keep-closed"), value: t("hud.roomsCount", { n: summary.counts["keep-closed"] }) });
 
   const room = scope.find((r) => r.id === selectedRoomId);
   if (!room) return rows;
@@ -561,7 +569,7 @@ function buildRows(snap: Snapshot): Row[] {
   rows.push({ label: t("hud.twinOn"), value: `${fmt(predictTemp(room.temp, snap.outside, true, 30), 1)} °C` });
   rows.push({ label: t("hud.twinOff"), value: `${fmt(predictTemp(room.temp, snap.outside, false, 30), 1)} °C` });
   rows.push({ label: t("hud.advice"), value: t(ADVICE_KEYS[advice.action]) });
-  rows.push({ label: t("hud.why"), value: t(`reason.${advice.reasonKey}` as const, { aqi: advice.aqi ?? "" }) });
+  rows.push({ label: t("hud.why"), value: t(`reason.${advice.reasonKey}` as const, { aqi: advice.aqi ?? "", limit: thresholds.aqiVentMax }) });
   return rows;
 }
 
@@ -596,6 +604,8 @@ function updateDetail(snap: Snapshot): void {
 function refresh(): void {
   syncUrl();
   showLegend(activeTownship !== null);
+  advisorPanel.show(activeTownship !== null);
+  advisorPanel.sync({ thresholds, demoAqi });
   const connected = ws.readyState === WebSocket.OPEN;
   const rows: Row[] = [{ label: t("hud.connection"), value: t(connected ? "hud.live" : "hud.disconnected"), alert: !connected }];
 
