@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { advise, sanitizeAqiOverride, summarize, type AdviceAction, type Thresholds } from "./advisor";
+import { advise, isDefaultThresholds, sanitizeAqiOverride, summarize, type AdviceAction, type Thresholds } from "./advisor";
 import { loadAerial } from "./aerial";
 import { createBuildingView, type BuildingMode, type BuildingView } from "./building-view";
 import {
@@ -31,7 +31,9 @@ import { officialSourceAt, type OfficialSourceId } from "./camera-sources";
 import { createMapView } from "./map-view";
 import { createStreetView } from "./street-view";
 import { fromMetres } from "./tiles";
-import { ALERT_TEMP, predictTemp } from "./model";
+import { createEnergyPanel } from "./energy-panel";
+import { SIM_TICK_MINUTES, createHistory, record, seriesOf, type History as EnergyRecord } from "./history";
+import { ALERT_TEMP, estimateAcPowerKw, predictTemp } from "./model";
 import { camera, canvas, controls, frameView, renderer, resize, scene, setZoomLimit } from "./scene";
 import { METRES_PER_LEVEL, catalog, loadTownship, type CatalogEntry, type TownshipData } from "./township-data";
 import { createTownshipView, type TownshipView } from "./township-view";
@@ -90,6 +92,7 @@ let pendingBuilding: string | null = null;
 let pendingRoom: string | null = null;
 
 let latest: Snapshot | null = null;
+let energyRecord: EnergyRecord | null = null; // the AC energy record of the open township
 let openBuildingId: string | null = null;
 let buildingView: BuildingView | null = null;
 let floorTable: FloorTable | null = null;
@@ -222,6 +225,7 @@ function leaveTownship(): void {
   activeTownship = null;
   activeBuildingIds = new Set();
   latest = null;
+  energyRecord = null;
   townsScroll = null;
   highlightedId = null;
 }
@@ -229,6 +233,7 @@ function leaveTownship(): void {
 function enterTownship(data: TownshipData): void {
   leaveTownship();
   activeTownship = data;
+  energyRecord = createHistory();
   activeBuildingIds = new Set(data.buildings.map((b) => b.id));
   townshipView = createTownshipView(data);
   scene.add(townshipView.group);
@@ -318,6 +323,7 @@ function connect(): void {
     }
     if (!activeTownship || !isSnapshot(data, activeTownship.id, activeBuildingIds)) return;
     latest = data;
+    recordHistory(data);
     if (pendingBuilding) {
       const id = pendingBuilding;
       pendingBuilding = null;
@@ -496,6 +502,8 @@ const mapView = createMapView(document.getElementById("map") as HTMLElement, cat
     cameras: t("camera.toggle"),
   }),
 });
+const townEnergy = createEnergyPanel(document.getElementById("energy-town") as HTMLElement);
+const buildingEnergy = createEnergyPanel(document.getElementById("energy-building") as HTMLElement);
 const advisorPanel = createAdvisorPanel((settings) => {
   thresholds = settings.thresholds;
   demoAqi = settings.demoAqi;
@@ -512,6 +520,37 @@ const updatePlaces = (): void =>
       search: placeOf(e),
     })),
   );
+
+// The advisor's verdict for one room. The unit's power is the twin's estimate of its current draw (the
+// rated power is only a ceiling), so "save up to X kW" is what that unit is probably using right now.
+function adviceOf(snap: Snapshot, room: RoomState) {
+  return advise({
+    roomTemp: room.temp,
+    ac: room.ac,
+    outsideTemp: snap.outside,
+    aqi: demoAqi ?? snap.air?.aqi ?? null,
+    acPowerKw: estimateAcPowerKw(room.temp, snap.acPowerKw),
+    thresholds,
+  });
+}
+
+// One snapshot is one simulator tick: add it to the energy record. The avoidable part of a tick is what
+// the AC units of rooms advised "open windows" would have drawn in it.
+function recordHistory(snap: Snapshot): void {
+  if (!energyRecord) return;
+  const hours = SIM_TICK_MINUTES / 60;
+  const avoidable = new Map<string, number>();
+  for (const room of snap.rooms) {
+    if (!room.ac) continue;
+    const advice = adviceOf(snap, room);
+    if (advice.action === "open-windows") avoidable.set(room.building, (avoidable.get(room.building) ?? 0) + advice.saveKw * hours);
+  }
+  record(energyRecord, {
+    simMinutes: snap.simMinutes,
+    assumptionsChanged: demoAqi !== null || !isDefaultThresholds(thresholds),
+    buildings: snap.buildings.map((b) => ({ id: b.id, acKwh: b.acKwh, avoidableKwh: avoidable.get(b.id) ?? 0 })),
+  });
+}
 
 function buildRows(snap: Snapshot): Row[] {
   // A snapshot only holds the township being viewed
@@ -547,9 +586,7 @@ function buildRows(snap: Snapshot): Row[] {
   }
 
   // Advisor: health first, so the AQI decides before temperature does
-  const aqiForAdvice = demoAqi ?? snap.air?.aqi ?? null;
-  const adviceFor = (r: RoomState) =>
-    advise({ roomTemp: r.temp, ac: r.ac, outsideTemp: snap.outside, aqi: aqiForAdvice, acPowerKw: snap.acPowerKw, thresholds });
+  const adviceFor = (r: RoomState) => adviceOf(snap, r);
   const summary = summarize(scope.map(adviceFor));
   const saving = summary.saveKw > 0 ? t("hud.saveUpTo", { kw: fmt(summary.saveKw, 1) }) : "";
   rows.push({
@@ -635,6 +672,8 @@ function refresh(): void {
     stats.set(b.id, { avgTemp: avg, alerts: rooms.filter((r) => r.temp > ALERT_TEMP).length, kwh });
   }
   table?.update(stats, openBuildingId);
+  townEnergy.update(energyRecord ? seriesOf(energyRecord, energyRecord.total) : null);
+  if (openBuildingId) buildingEnergy.update(energyRecord ? seriesOf(energyRecord, energyRecord.buildings.get(openBuildingId)) : null);
   townshipView?.setTemps(avgByBuilding);
   if (buildingView && openBuildingId) {
     buildingView.setRooms(roomsOf(latest, openBuildingId), selectedRoomId);
