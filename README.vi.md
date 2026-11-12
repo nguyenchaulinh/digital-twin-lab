@@ -9,7 +9,7 @@ Dự án học tập nhỏ, dựng **digital twin của các khu đô thị trê
 ## Chức năng
 
 - **Bản đồ Việt Nam:** ứng dụng mở đầu bằng một bản đồ (MapLibre GL, vector tile của OpenFreeMap) với mỗi khu là một điểm, gom cụm khi thu nhỏ. Bấm một điểm để xem tên và nút mở 3D, hoặc tìm trong danh sách bên phải theo tên, thành phố hoặc phường. Nút Bản đồ / Vệ tinh (góc dưới trái) chuyển sang ảnh vệ tinh có tên địa danh, để xem tòa nhà, đường và sông. Zoom từ mức 15 trở lên thì các tòa nhà của những khu đang trong khung nhìn được vẽ ngay trên bản đồ, dựng khối theo số tầng (tháp có mô phỏng màu hổ phách, còn lại màu xám); rê chuột vào tháp để xem tên, bấm để vào thẳng chi tiết tòa đó. Quay lại từ một khu thì bản đồ giữ nguyên như lúc rời đi.
-- **Chế độ khu đô thị:** khuôn viên thật từ OpenStreetMap: 8 tòa tháp, tới 160 công trình xung quanh, đường và lối đi bộ, công viên, mặt nước, sân thể thao và bãi đỗ xe, các công trình được đùn theo số tầng. Nhấn **Esc** (hoặc nút phía trên danh sách) để về bản đồ. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng. Di chuột vào một tòa (hoặc dòng của nó trong danh sách) sẽ làm sáng cả hai và hiện tên tòa trong tooltip.
+- **Chế độ khu đô thị:** khuôn viên thật từ OpenStreetMap: 8 tòa tháp, tới 160 công trình xung quanh, đường và lối đi bộ, công viên, mặt nước, sân thể thao và bãi đỗ xe, các công trình được đùn theo số tầng. Nhấn **Esc** (hoặc nút phía trên danh sách) để về bản đồ. Mỗi tòa tô màu theo nhiệt độ trung bình các phòng; chú giải ở panel bên trái cho biết thang màu (20 đến 30 °C, đánh dấu ngưỡng cảnh báo 25 °C) và màu của tòa chưa có số đo. Danh sách tòa sắp xếp được theo từng cột (bấm lại tiêu đề để đảo chiều, bấm lần thứ ba để về thứ tự ban đầu) và lọc được chỉ còn các tòa có cảnh báo; khi chuột hoặc focus bàn phím đang ở trên các dòng thì thứ tự đứng yên, rời ra mới cập nhật. Di chuột vào một tòa (hoặc dòng của nó trong danh sách) sẽ làm sáng cả hai và hiện tên tòa trong tooltip.
 - **Chế độ tòa nhà:** bấm vào một tòa để mở nó theo đúng hình dạng thật, với hai kiểu hiển thị (nút chuyển trong panel chi tiết). *Mặt tiền*: tòa nhà đặc có cửa sổ vẽ ở mỗi tầng, đứng trên ảnh vệ tinh của khu xung quanh (khoảng 430 m) và mái cũng phủ ảnh vệ tinh; phòng đang rê chuột hoặc đang chọn hiện xuyên qua tường. *Cảm biến*: lớp vỏ mờ với một đường kẻ ở mỗi tầng và một tấm màu cho từng phòng trên mỗi tầng có cảm biến. Mặt tiền là hình vẽ, không phải ảnh chụp: OSM không có ảnh mặt tiền (Xem phố mới cho thấy tòa nhà thật). Panel chi tiết hiện tên, liên kết OSM, số tầng, chiều cao ước tính, diện tích nền, các giá trị trung bình và bảng các tầng có cảm biến. Chọn phòng từ cảnh 3D hoặc từ bảng rồi bật/tắt điều hòa (lệnh được gửi ngược về simulator).
 - **Xem phố:** ảnh đường phố từ Mapillary trong một panel, mở từ bản đồ (bấm *Xem phố* rồi bấm vào một con đường), từ popup của khu, hoặc từ tòa nhà đang mở. Hiện ảnh gần nhất trong bán kính 60 m, nếu không có thì 150 m. Cần `VITE_MAPILLARY_TOKEN`; không có thì các nút bị ẩn.
 - **Camera:** từ zoom 10, các camera giao thông và camera đường phố có trên OpenStreetMap hiện thành chấm (tốc độ màu đỏ, đèn đỏ màu hồng tím, giao thông khác màu xanh, giám sát đường phố màu xám; nút *Camera* để ẩn). Popup cho biết loại camera, giới hạn tốc độ và hướng nếu có, liên kết OSM và nút Xem phố. **Chỉ có vị trí, không có hình ảnh trực tiếp:** chưa dịch vụ camera nào ở Việt Nam công bố API hay điều khoản dùng lại, nên popup chỉ dẫn tới dịch vụ chính thức của khu vực (cổng giao thông TP.HCM; Hà Nội là ứng dụng iHanoi). Nguồn trực tiếp đã được cho phép sẽ được thêm ở `src/camera-sources.ts`.
@@ -73,7 +73,7 @@ Hãy restart `npm run sim` mỗi khi sửa code simulator. Viewer từ chối sn
 
 ### Ghi đè AQI để demo
 
-Mở `http://localhost:5173/?demoAqi=160` để đưa một AQI giả vào bộ khuyến nghị và xem nó ưu tiên sức khỏe hơn điện. HUD hiện một dòng riêng "AQI (ghi đè demo)" để không bị nhầm với dữ liệu thật.
+Mở `http://localhost:5173/?demoAqi=160`, hoặc gõ một giá trị vào ô "AQI thử" trong panel của bộ khuyến nghị (số nguyên từ 0 đến 500), để đưa một AQI giả vào bộ khuyến nghị và xem nó ưu tiên sức khỏe hơn điện. HUD hiện một dòng riêng "AQI (ghi đè demo)" để không bị nhầm với dữ liệu thật. AQI thử không bao giờ được lưu.
 
 ## Chính sách khuyến nghị
 
@@ -84,7 +84,7 @@ Sức khỏe trước, tiết kiệm điện sau (`src/advisor.ts`):
 3. AQI từ 100 trở xuống, ngoài trời mát hơn phòng ít nhất 1 °C và không quá 26 °C: thông gió thay vì bật điều hòa.
 4. Còn lại: chỉ bật điều hòa khi phòng vượt 26 °C.
 
-Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, không phải tiêu chuẩn**. Điều hòa được giả định công suất 1 kW và chạy điều biến, nên "tiết kiệm tối đa X kW" là cận trên, không phải mức tiết kiệm đo được.
+Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, không phải tiêu chuẩn**, và panel bên trái cho chỉnh ngay khi đang mở một khu: mục *Ngưỡng của bộ khuyến nghị* có mỗi ngưỡng một thanh trượt: giới hạn AQI (0 đến 300, bước 5), ngưỡng thoải mái (22 đến 30 °C, bước 0,5) và độ mát hơn tối thiểu của ngoài trời (0 đến 5 °C, bước 0,5); HUD hiện số phòng rơi vào từng kết quả nên thấy tác động ngay. Panel đã chỉnh được đánh dấu "(đã đổi)" và nút *Đặt lại* trả về mặc định. Giá trị được lưu trong trình duyệt này (`localStorage`, đọc lại qua đúng các giới hạn của thanh trượt) và không gửi đi đâu. Dòng "Lý do" ghi giới hạn đang dùng. Bốn quy tắc ở trên viết cho giá trị mặc định. Điều hòa được giả định công suất 1 kW và chạy điều biến, nên "tiết kiệm tối đa X kW" là cận trên, không phải mức tiết kiệm đo được.
 
 ## Lệnh
 
@@ -93,7 +93,7 @@ Các ngưỡng (100, 26 °C, 1 °C) là **giả định có thể chỉnh, khôn
 | `npm run sim` | Chạy simulator |
 | `npm run dev` | Chạy Vite dev server |
 | `npm run build` | Build production |
-| `npm test` | Chạy toàn bộ test (`test:feeds`, `test:township`, `test:advisor`, `test:geometry`, `test:snapshot`, `test:mapbuildings`, `test:tiles`, `test:street`, `test:cameras`) |
+| `npm test` | Chạy toàn bộ test (`test:feeds`, `test:township`, `test:advisor`, `test:geometry`, `test:snapshot`, `test:mapbuildings`, `test:tiles`, `test:street`, `test:cameras`, `test:tablesort`, `test:urlstate`) |
 | `npm run discover:townships` | Tìm các khu ứng viên trên toàn Việt Nam trong OpenStreetMap và ghi `scripts/townships.seed.json` (chỉ cần khi muốn làm mới danh sách) |
 | `npm run fetch:township` | Trích mọi seed chưa có file (ghi `data/townships/*.json` và `data/catalog.json`). Chạy lại được, khoảng 45 giây mỗi khu trên server Overpass công cộng. `-- vn007` cho một khu, `-- --force` để ghi đè, `-- --rename` để sinh lại tên (không cần mạng) |
 | `npm run fetch:cameras` | Trích camera giao thông và camera đường phố công cộng ở Việt Nam từ OSM vào `data/cameras.json` (một truy vấn Overpass). `-- --from <file>` để dùng lại kết quả Overpass đã lưu |
@@ -140,7 +140,7 @@ Số tầng thiếu trong OSM được giả định (nhà phố 2, nhà liền 
 ## Xử lý sự cố
 
 - **Viewer báo "mất kết nối":** `npm run sim` chưa chạy, hoặc Vite không ở cổng 5173. Simulator chỉ nhận kết nối WebSocket từ `http://localhost:5173` và `http://127.0.0.1:5173`. Viewer tự thử lại mỗi 2 giây, nên restart simulator không cần tải lại trang.
-- **Trang tự nhảy về bản đồ:** tải lại trang luôn bắt đầu ở bản đồ. Dev server không theo dõi `data/` (xem `vite.config.js`), vì `npm run fetch:township` ghi vào đó vài giây một lần và mỗi lần ghi sẽ reload trang. Sau khi fetch xong, restart `npm run dev` để nhận file mới.
+- **Trang tự nhảy về bản đồ:** thanh địa chỉ lưu khu, tòa, phòng và kiểu hiển thị (`#t=…&b=…&r=…&m=…`), nên tải lại sẽ về đúng chỗ cũ và có thể chia sẻ link; địa chỉ trơn thì bắt đầu ở bản đồ. Giá trị lạ hoặc sai định dạng bị bỏ qua. Dev server không theo dõi `data/` (xem `vite.config.js`), vì `npm run fetch:township` ghi vào đó vài giây một lần và mỗi lần ghi sẽ reload trang. Sau khi fetch xong, restart `npm run dev` để nhận file mới.
 - **`UNABLE_TO_VERIFY_LEAF_SIGNATURE` trong log simulator:** bạn đang ở sau proxy kiểm tra TLS. `npm run sim` đã truyền sẵn `--use-system-ca` để dùng kho chứng chỉ của hệ thống. Đừng tắt xác thực TLS.
 - **Cài đặt khi dùng registry nội bộ của công ty:** `npm install` có thể ghi URL registry nội bộ vào `package-lock.json`. Hãy kiểm tra trước khi commit lên repo public: `grep -c <host-registry-của-bạn> package-lock.json`.
 

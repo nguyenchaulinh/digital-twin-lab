@@ -59,6 +59,34 @@
       table { width: 100%; border-collapse: collapse; }
       th { color: #94a3b8; font-weight: 500; text-align: right; padding: 2px 4px; }
       th:first-child { text-align: left; }
+      #blist-filter { display: flex; gap: 6px; align-items: center; margin: 4px 0 6px; color: #94a3b8; font-size: 12px; cursor: pointer; }
+      #blist-empty { margin-top: 6px; color: #94a3b8; font-size: 12px; }
+      .sortbtn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+      .sortbtn:hover, .sortbtn:focus-visible { color: #e2e8f0; }
+      th[aria-sort] { color: #e2e8f0; }
+      th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; font-size: 10px; }
+      th[aria-sort="descending"] .sortbtn::after { content: " ▼"; font-size: 10px; }
+      #advisor { margin-top: 10px; font-size: 12px; color: #94a3b8; }
+      #advisor summary { cursor: pointer; }
+      #advisor-modified { color: #fbbf24; }
+      #advisor .slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin-top: 8px; }
+      #advisor .slider input { grid-column: 1 / -1; width: 100%; box-sizing: border-box; accent-color: #38bdf8; }
+      #advisor .slider output { color: #e2e8f0; font-variant-numeric: tabular-nums; }
+      #advisor input[type="number"] { padding: 2px 6px; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; font: inherit; }
+      #advisor .tool { margin-top: 8px; }
+      #advisor .tool:disabled { opacity: 0.4; cursor: default; }
+      #advisor-note { margin: 8px 0 0; }
+      #legend { margin-top: 10px; font-size: 12px; color: #94a3b8; }
+      #legend-title { margin-bottom: 4px; }
+      #legend-bar { position: relative; height: 10px; border-radius: 3px; }
+      #legend-bar::after { content: ""; position: absolute; top: -3px; bottom: -3px; left: var(--limit, 50%); width: 2px; margin-left: -1px; background: #f8fafc; }
+      #legend-scale { position: relative; height: 16px; margin-top: 2px; }
+      #legend-scale span { position: absolute; white-space: nowrap; }
+      #legend-min { left: 0; }
+      #legend-limit { left: var(--limit, 50%); transform: translateX(-50%); color: #e2e8f0; }
+      #legend-max { right: 0; }
+      #legend-nodata { margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+      #legend-nodata i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; border: 1px solid #64748b; }
       td { padding: 2px 4px; }
       td.num { text-align: right; font-variant-numeric: tabular-nums; }
       tr.active { background: #1e293b; }
@@ -92,6 +120,40 @@
         </fieldset>
       </div>
       <dl id="info"></dl>
+      <div id="legend" hidden>
+        <div id="legend-title" data-i18n="legend.title">Temperature colour (°C)</div>
+        <div id="legend-bar"></div>
+        <div id="legend-scale">
+          <span id="legend-min"></span>
+          <span id="legend-limit"></span>
+          <span id="legend-max"></span>
+        </div>
+        <div id="legend-nodata"><i></i> <span data-i18n="legend.noData">No reading yet</span></div>
+      </div>
+      <details id="advisor" hidden>
+        <summary><span data-i18n="advisor.title">Advisor thresholds</span> <span id="advisor-modified" data-i18n="advisor.modified" hidden>(changed)</span></summary>
+        <div class="slider">
+          <label for="th-aqiVentMax" data-i18n="advisor.aqi">Open windows only up to AQI</label>
+          <output id="out-aqiVentMax" for="th-aqiVentMax"></output>
+          <input type="range" id="th-aqiVentMax" data-th="aqiVentMax" />
+        </div>
+        <div class="slider">
+          <label for="th-comfortMax" data-i18n="advisor.comfort">Comfort limit</label>
+          <output id="out-comfortMax" for="th-comfortMax"></output>
+          <input type="range" id="th-comfortMax" data-th="comfortMax" />
+        </div>
+        <div class="slider">
+          <label for="th-freeCoolingMinDelta" data-i18n="advisor.delta">Outside must be cooler by</label>
+          <output id="out-freeCoolingMinDelta" for="th-freeCoolingMinDelta"></output>
+          <input type="range" id="th-freeCoolingMinDelta" data-th="freeCoolingMinDelta" />
+        </div>
+        <div class="slider">
+          <label for="th-demo" data-i18n="advisor.demo">Test AQI (replaces the real one)</label>
+          <input type="number" id="th-demo" min="0" max="500" step="1" inputmode="numeric" />
+        </div>
+        <button type="button" id="th-reset" class="tool" data-i18n="advisor.reset">Reset</button>
+        <p id="advisor-note" data-i18n="advisor.note">Assumptions, not standards. The thresholds are saved in this browser; the test AQI is not.</p>
+      </details>
       <div id="hint"></div>
       <div id="credits">
         <span data-i18n="credits.weather">Weather:</span>
@@ -120,18 +182,20 @@
       <h2 id="towns-name">–</h2>
       <div id="towns-place"></div>
       <h3 data-i18n="towns.title">Buildings (OSM)</h3>
-      <table>
+      <label id="blist-filter"><input type="checkbox" id="blist-alerts" /> <span data-i18n="towns.onlyAlerts">Only buildings with alerts</span></label>
+      <table id="blist">
         <thead>
           <tr>
-            <th data-i18n="towns.name">Name</th>
-            <th data-i18n="towns.floors">Floors</th>
-            <th data-i18n="towns.avg">Avg °C</th>
-            <th data-i18n="towns.alerts">Alerts</th>
-            <th data-i18n="towns.kwh">AC kWh</th>
+            <th data-sort="name"><button type="button" class="sortbtn" data-sort="name" data-i18n="towns.name">Name</button></th>
+            <th data-sort="levels"><button type="button" class="sortbtn" data-sort="levels" data-i18n="towns.floors">Floors</button></th>
+            <th data-sort="avgTemp"><button type="button" class="sortbtn" data-sort="avgTemp" data-i18n="towns.avg">Avg °C</button></th>
+            <th data-sort="alerts"><button type="button" class="sortbtn" data-sort="alerts" data-i18n="towns.alerts">Alerts</button></th>
+            <th data-sort="kwh"><button type="button" class="sortbtn" data-sort="kwh" data-i18n="towns.kwh">AC kWh</button></th>
           </tr>
         </thead>
         <tbody id="blist-body"></tbody>
       </table>
+      <div id="blist-empty" data-i18n="towns.noMatch" hidden>No building has an alert right now.</div>
     </aside>
     <aside id="detail" class="panel" aria-labelledby="detail-name" hidden>
       <button type="button" id="back" data-i18n="hud.back">← Township</button>

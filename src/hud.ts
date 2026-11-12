@@ -1,5 +1,16 @@
 import type { BuildingMode } from "./building-view";
-import { fmt } from "./i18n";
+import { NO_DATA_COLOR, TEMP_MAX, TEMP_MIN, tempColor } from "./color";
+import { fmt, t } from "./i18n";
+import {
+  DEFAULT_THRESHOLDS,
+  THRESHOLD_LIMITS,
+  isDefaultThresholds,
+  sanitizeAqiOverride,
+  sanitizeThresholds,
+  type Thresholds,
+} from "./advisor";
+import { ALERT_TEMP } from "./model";
+import { arrange, nextSort, type SortKey, type SortState } from "./table-sort";
 import type { RoomState } from "./types";
 
 // All text goes in through textContent; nothing here builds HTML from data.
@@ -168,9 +179,108 @@ function numberCell(): HTMLTableCellElement {
   return td;
 }
 
-// The tables are built once and then updated in place: rebuilding them on every snapshot would swap
+// --- Colour legend: drawn from the same scale as the 3D view (color.ts), so they cannot drift apart ---
+const legend = byId("legend");
+{
+  const steps = 10;
+  const stops = Array.from({ length: steps + 1 }, (_, i) => {
+    const temp = TEMP_MIN + ((TEMP_MAX - TEMP_MIN) * i) / steps;
+    return `${tempColor(temp).getStyle()} ${(i / steps) * 100}%`;
+  });
+  byId("legend-bar").style.background = `linear-gradient(to right, ${stops.join(", ")})`;
+  legend.style.setProperty("--limit", `${((ALERT_TEMP - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)) * 100}%`);
+  const swatch = byId("legend-nodata").querySelector("i");
+  if (swatch) swatch.style.background = `#${NO_DATA_COLOR.toString(16).padStart(6, "0")}`;
+}
+
+// Shown wherever the 3D view colours things by temperature; the labels follow the language
+export function showLegend(visible: boolean): void {
+  legend.hidden = !visible;
+  if (!visible) return;
+  byId("legend-min").textContent = t("legend.min", { t: TEMP_MIN });
+  byId("legend-limit").textContent = t("legend.limit", { t: ALERT_TEMP });
+  byId("legend-max").textContent = t("legend.max", { t: TEMP_MAX });
+}
+
+// --- Advisor settings: sliders for the policy thresholds, and a test AQI that replaces the real one ---
+export interface AdvisorSettings {
+  thresholds: Thresholds;
+  demoAqi: number | null;
+}
+
+export interface AdvisorPanel {
+  show: (visible: boolean) => void;
+  sync: (settings: AdvisorSettings) => void;
+}
+
+const THRESHOLD_KEYS = Object.keys(THRESHOLD_LIMITS) as Array<keyof Thresholds>;
+
+export function createAdvisorPanel(onChange: (settings: AdvisorSettings) => void): AdvisorPanel {
+  const panel = byId("advisor");
+  const demo = byId<HTMLInputElement>("th-demo");
+  const reset = byId<HTMLButtonElement>("th-reset");
+  const modified = byId("advisor-modified");
+  const sliders = new Map(
+    THRESHOLD_KEYS.map((key) => {
+      const input = byId<HTMLInputElement>(`th-${key}`);
+      const { min, max, step } = THRESHOLD_LIMITS[key];
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      return [key, input] as const;
+    }),
+  );
+
+  const read = (): AdvisorSettings => ({
+    thresholds: sanitizeThresholds(Object.fromEntries(THRESHOLD_KEYS.map((key) => [key, Number(sliders.get(key)?.value)]))),
+    demoAqi: sanitizeAqiOverride(demo.value),
+  });
+
+  for (const input of [...sliders.values(), demo]) input.addEventListener("input", () => onChange(read()));
+  reset.addEventListener("click", () => onChange({ thresholds: { ...DEFAULT_THRESHOLDS }, demoAqi: null }));
+
+  return {
+    show(visible) {
+      panel.hidden = !visible;
+    },
+    sync({ thresholds, demoAqi }) {
+      // refresh() runs every second: leave a control alone while it already shows the value, so a drag or typing is not fought
+      for (const key of THRESHOLD_KEYS) {
+        const input = sliders.get(key);
+        if (input && Number(input.value) !== thresholds[key]) input.value = String(thresholds[key]);
+        byId(`out-${key}`).textContent = key === "aqiVentMax" ? String(thresholds[key]) : `${fmt(thresholds[key], 1)} °C`;
+      }
+      if (document.activeElement !== demo && sanitizeAqiOverride(demo.value) !== demoAqi) demo.value = demoAqi === null ? "" : String(demoAqi);
+      const changed = !isDefaultThresholds(thresholds) || demoAqi !== null;
+      modified.hidden = !changed;
+      reset.disabled = !changed;
+    },
+  };
+}
+
+// --- Building table: sortable by column, filterable to the buildings with alerts ---
+const headerCells = Array.from(document.querySelectorAll<HTMLTableCellElement>("#blist th[data-sort]"));
+const alertsOnly = byId<HTMLInputElement>("blist-alerts");
+const emptyNote = byId("blist-empty");
+// The sort is kept from one township to the next; the filter starts off again
+let sortState: SortState | null = null;
+
+function showSortState(): void {
+  for (const th of headerCells) {
+    if (sortState !== null && th.dataset.sort === sortState.key) {
+      th.setAttribute("aria-sort", sortState.dir === "asc" ? "ascending" : "descending");
+    } else {
+      th.removeAttribute("aria-sort");
+    }
+  }
+}
+
+// The table is built once and then updated in place: rebuilding it on every snapshot would swap
 // the buttons out from under a click in progress and drop keyboard focus. Row states ("active",
 // "hover") are toggled with classList so that updates never overwrite each other.
+// The values change every second, so a sorted or filtered table would reshuffle under the pointer.
+// While the pointer or focus is inside the rows only the numbers update; the order and the filter
+// catch up as soon as it leaves, or at once when the user changes the sort or the filter.
 export function createBuildingTable(
   buildings: Array<{ id: string; name: string; levels: number }>,
   onOpen: (id: string) => void,
@@ -199,11 +309,60 @@ export function createBuildingTable(
     tr.addEventListener("focusin", () => onHover(b.id));
     tr.addEventListener("focusout", () => onHover(null));
     tableBody.append(tr);
-    return { id: b.id, tr, avg, alerts, kwh };
+    return { id: b.id, name: b.name, levels: b.levels, tr, avg, alerts, kwh };
   });
+  const rowById = new Map(rows.map((r) => [r.id, r]));
+
+  let latest = new Map<string, BuildingStats>();
+  let shownOrder: string[] = rows.map((r) => r.id);
+
+  alertsOnly.checked = false;
+  showSortState();
+
+  const pointerOrFocusInside = (): boolean => tableBody.matches(":hover") || tableBody.contains(document.activeElement);
+
+  function layout(): void {
+    const arranged = arrange(
+      rows.map((r) => {
+        const s = latest.get(r.id);
+        return { id: r.id, name: r.name, levels: r.levels, avgTemp: s?.avgTemp ?? null, alerts: s?.alerts ?? 0, kwh: s?.kwh ?? 0 };
+      }),
+      sortState,
+      alertsOnly.checked,
+    );
+    let visible = 0;
+    for (const a of arranged) {
+      const row = rowById.get(a.id);
+      if (!row) continue;
+      row.tr.hidden = !a.visible;
+      if (a.visible) visible += 1;
+    }
+    emptyNote.hidden = visible > 0 || rows.length === 0;
+    const order = arranged.map((a) => a.id);
+    if (order.some((id, i) => id !== shownOrder[i])) {
+      // Moving rows drops keyboard focus, so it is only done when the order really changed
+      tableBody.append(...order.map((id) => rowById.get(id)!.tr));
+      shownOrder = order;
+    }
+  }
+
+  // These elements are static markup shared by every township's table, so the handlers are
+  // assigned (replacing the previous table's) rather than added
+  for (const th of headerCells) {
+    const button = th.querySelector("button");
+    if (!button) continue;
+    button.onclick = () => {
+      sortState = nextSort(sortState, th.dataset.sort as SortKey);
+      showSortState();
+      layout();
+    };
+  }
+  alertsOnly.onchange = layout;
+  tableBody.onpointerleave = layout;
 
   return {
     update(stats, activeId) {
+      latest = stats;
       for (const row of rows) {
         const s = stats.get(row.id);
         row.tr.classList.toggle("active", row.id === activeId);
@@ -212,6 +371,7 @@ export function createBuildingTable(
         row.alerts.className = s && s.alerts > 0 ? "num alert" : "num";
         row.kwh.textContent = s ? fmt(s.kwh, 1) : "–";
       }
+      if (!pointerOrFocusInside()) layout();
     },
     setHover(id) {
       for (const row of rows) row.tr.classList.toggle("hover", row.id === id);
