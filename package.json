@@ -7,7 +7,7 @@
     "discover:townships": "node --use-system-ca scripts/discover-townships.mjs",
     "fetch:township": "node --use-system-ca scripts/fetch-township.mjs",
     "fetch:cameras": "node --use-system-ca scripts/fetch-cameras.mjs",
-    "test": "npm run test:feeds && npm run test:township && npm run test:advisor && npm run test:geometry && npm run test:snapshot && npm run test:mapbuildings && npm run test:tiles && npm run test:street && npm run test:cameras && npm run test:tablesort && npm run test:urlstate",
+    "test": "npm run test:feeds && npm run test:township && npm run test:advisor && npm run test:geometry && npm run test:snapshot && npm run test:mapbuildings && npm run test:tiles && npm run test:street && npm run test:cameras && npm run test:tablesort && npm run test:urlstate && npm run test:history && npm run test:chartscale",
     "test:feeds": "node server/feeds.test.mjs",
     "test:township": "node server/township.test.mjs",
     "test:advisor": "node test/advisor.test.ts",
@@ -20,7 +20,9 @@
     "test:street": "node test/mapillary-search.test.ts",
     "test:cameras": "node test/camera-data.test.mjs",
     "test:tablesort": "node test/table-sort.test.ts",
-    "test:urlstate": "node test/url-state.test.ts"
+    "test:urlstate": "node test/url-state.test.ts",
+    "test:history": "node test/history.test.ts",
+    "test:chartscale": "node test/chart-scale.test.ts"
   },
   "dependencies": {
     "mapillary-js": "^4.1.2",
